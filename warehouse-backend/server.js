@@ -58,22 +58,21 @@ app.patch('/api/employees/:id', async (req, res) => {
 // ==========================================
 // API SẢN LƯỢNG
 // ==========================================
+// API LƯU LỊCH SỬ LÀM VIỆC (Đã thêm Tên ca và Mã vận đơn)
 app.post('/api/logs', async (req, res) => {
-    const { employee_id, work_date, start_time, end_time, total_orders, total_time_seconds, average_time_per_order } = req.body;
+    const { employee_id, work_date, start_time, end_time, total_orders, total_time_seconds, average_time_per_order, session_name, order_codes } = req.body;
     
-    if (!employee_id || !work_date || !start_time || !end_time || total_orders === undefined) {
-        return res.status(400).json({ error: 'Thiếu thông tin dữ liệu' });
-    }
+    if (!employee_id) return res.status(400).json({ error: 'Thiếu ID nhân viên' });
 
-    const logData = { employee_id, work_date, start_time, end_time, total_orders };
-    if (total_time_seconds !== undefined) logData.total_time_seconds = total_time_seconds;
-    if (average_time_per_order !== undefined) logData.average_time_per_order = average_time_per_order;
+    const { data, error } = await supabase
+        .from('productivity_logs')
+        .insert([{ 
+            employee_id, work_date, start_time, end_time, total_orders, 
+            total_time_seconds, average_time_per_order, session_name, order_codes 
+        }]);
 
-    const { data, error } = await supabase.from('productivity_logs')
-        .insert([logData]);
-        
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ message: 'Lưu sản lượng thành công!' });
+    res.json({ message: 'Đã lưu thành công', data });
 });
 
 // ==========================================
@@ -121,7 +120,23 @@ app.delete('/api/employees/:id', async (req, res) => {
 
     res.json({ message: 'Nhân viên đã được xóa' });
 });
+// ==========================================
+// API TÌM KIẾM MÃ VẬN ĐƠN
+// ==========================================
+app.get('/api/search', async (req, res) => {
+    const { code } = req.query;
+    if (!code) return res.status(400).json({ error: 'Thiếu mã vận đơn' });
 
+    // Tìm kiếm trong cột order_codes xem có chứa mã này không
+    const { data, error } = await supabase
+        .from('productivity_logs')
+        .select('*, employees(name, role, team_name)')
+        .ilike('order_codes', `%${code}%`)
+        .order('created_at', { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // ==========================================
