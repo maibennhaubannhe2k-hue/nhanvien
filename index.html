@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouse Productivity & HR Manager</title>
+    <title>ACBT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -22,46 +22,50 @@
         .org-connector-vertical { width: 2px; height: 40px; background-color: #3b82f6; margin: 0 auto; }
         .org-level-2 { display: flex; justify-content: center; gap: 20px; width: 100%; flex-wrap: wrap; }
         .team-box { border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; background: #eff6ff; min-width: 250px; }
-        .team-header { text-center font-bold text-lg text-blue-800 mb-4; }
+        .team-header { text-align: center; font-weight: bold; font-size: 1.125rem; color: #1e40af; margin-bottom: 1rem; }
         .team-lead-card { background: white; border: 2px solid #1e40af; border-radius: 8px; padding: 12px; text-align: center; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .team-lead-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin: 0 auto 8px; }
         .team-members-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         .team-member-card { background: white; border: 1px solid #93c5fd; border-radius: 6px; padding: 10px; width: 130px; text-align: center; font-size: 0.875rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .team-member-card img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin: 0 auto 6px; }
-        /* Hiệu ứng nháy xanh cho nhân viên đang làm */
-.status-pulse {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    background-color: #10b981;
-    border-radius: 50%;
-    margin-right: 5px;
-    animation: pulse-animation 1.5s infinite;
-}
+        .status-pulse {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #10b981;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse-animation 1.5s infinite;
+        }
 
-@keyframes pulse-animation {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
 
-/* Làm cho dòng chữ trong Select nổi bật hơn khi đang chọn người đang làm */
-.bg-working {
-    color: #059669 !important;
-    font-weight: 800 !important;
-}
+        .bg-working {
+            color: #059669 !important;
+            font-weight: 800 !important;
+        }
     </style>
-    
 </head>
 <body class="bg-gray-100 font-sans relative">
 
     <nav class="bg-blue-800 text-white p-4 shadow-md">
-        <div class="max-w-7xl mx-auto flex gap-4 overflow-x-auto">
-            <h1 class="text-xl font-bold mr-8 whitespace-nowrap">📦 Quản Lý Kho Pro</h1>
-            <button onclick="switchTab('input')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">🕒 Làm Việc & Sản Lượng</button>
-            <button onclick="switchTab('employees')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">👥 Hồ Sơ Nhân Viên</button>
-            <button onclick="switchTab('orgchart')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">🏢 Sơ Đồ Kho</button>
-            <button onclick="switchTab('dashboard')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">📊 Dashboard</button>
+        <div class="max-w-7xl mx-auto flex gap-4 overflow-x-auto items-center justify-between">
+            <div class="flex gap-4 items-center">
+                <h1 class="text-xl font-bold mr-8 whitespace-nowrap">📦 Quản Lý Kho Pro</h1>
+                <button onclick="switchTab('input')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">🕒 Làm Việc & Sản Lượng</button>
+                <button onclick="switchTab('employees')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">👥 Hồ Sơ Nhân Viên</button>
+                <button onclick="switchTab('orgchart')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">🏢 Sơ Đồ Kho</button>
+                <button onclick="switchTab('dashboard')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">📊 Dashboard</button>
+            </div>
+            
+            <div class="flex items-center bg-white rounded-full px-3 py-1.5 shadow-inner min-w-[250px]">
+                <input type="text" id="globalSearchInput" placeholder="🔍 Tìm mã vận đơn..." class="outline-none text-sm text-gray-800 w-full bg-transparent font-medium" onkeypress="if(event.key === 'Enter') searchOrderCode()">
+                <button onclick="searchOrderCode()" class="text-blue-600 hover:text-blue-800 font-bold ml-2">Tìm</button>
+            </div>
         </div>
     </nav>
 
@@ -73,7 +77,10 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div class="lg:col-span-1">
                         <label class="block text-sm font-bold mb-1 text-gray-700">Chọn nhân viên đang thao tác:</label>
-                        <select id="empSelect" onchange="handleEmployeeChange()" class="w-full border-2 border-blue-300 p-2 rounded font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></select>
+                        <select id="empSelect" onchange="handleEmployeeChange()" class="w-full border-2 border-blue-300 p-2 rounded font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-3"></select>
+                        
+                        <label class="block text-sm font-bold mb-1 text-gray-700">Tên ca làm (Bắt buộc):</label>
+                        <input type="text" id="sessionNameInput" placeholder="VD: Xử lý hàng hoàn, Ca sáng..." class="w-full border-2 border-blue-300 p-2 rounded font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                     </div>
                     <div class="text-center lg:col-span-1">
                         <div class="text-sm font-bold text-gray-500 uppercase">Trạng thái phiên</div>
@@ -173,7 +180,7 @@
     </div>
 
     <div id="historyModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl transform transition-all">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-5xl transform transition-all">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <h3 class="text-xl font-bold text-blue-800" id="historyModalTitle">Lịch sử làm việc</h3>
                 <button onclick="closeHistoryModal()" class="text-gray-500 hover:text-red-500 font-bold text-3xl">&times;</button>
@@ -185,10 +192,19 @@
                 </div>
                 <button onclick="fetchAndRenderHistory()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-1.5 rounded font-bold shadow">Tra Cứu</button>
             </div>
-            <div class="max-h-64 overflow-y-auto border rounded bg-gray-50">
+            <div class="max-h-80 overflow-y-auto border rounded bg-gray-50">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-gray-200 sticky top-0 shadow-sm">
-                        <tr><th class="p-3 border-b font-bold text-gray-700">Ngày làm việc</th><th class="p-3 border-b font-bold text-gray-700">Giờ Bắt đầu</th><th class="p-3 border-b font-bold text-gray-700">Giờ Kết thúc</th><th class="p-3 border-b text-right font-bold text-gray-700">Sản lượng</th><th class="p-3 border-b text-center font-bold text-gray-700">Tổng thời gian</th><th class="p-3 border-b text-center font-bold text-gray-700">Thời gian TB/đơn</th></tr>
+                        <tr>
+                            <th class="p-3 border-b font-bold text-gray-700">Ngày</th>
+                            <th class="p-3 border-b font-bold text-gray-700 text-blue-700">Tên Ca Làm</th>
+                            <th class="p-3 border-b font-bold text-gray-700">Giờ Bắt đầu</th>
+                            <th class="p-3 border-b font-bold text-gray-700">Giờ Kết thúc</th>
+                            <th class="p-3 border-b text-right font-bold text-gray-700">Sản lượng</th>
+                            <th class="p-3 border-b text-center font-bold text-gray-700">Tổng thời gian</th>
+                            <th class="p-3 border-b text-center font-bold text-gray-700">Thời gian TB/đơn</th>
+                            <th class="p-3 border-b text-center font-bold text-gray-700">Thao tác</th>
+                        </tr>
                     </thead>
                     <tbody id="historyTableBody"></tbody>
                 </table>
@@ -199,7 +215,7 @@
 
     <script>
         // ==========================================
-        // CẤU HÌNH HỆ THỐNG
+        // CẤU HÌNH HỆ THỐNG (ĐANG TEST LOCAL)
         // ==========================================
         const API_URL = 'https://backend-kho.onrender.com/api'; 
         
@@ -225,6 +241,53 @@
         }
 
         // ==========================================
+        // MODULE: TÌM KIẾM MÃ VẬN ĐƠN (MỚI)
+        // ==========================================
+        async function searchOrderCode() {
+            const code = document.getElementById('globalSearchInput').value.trim();
+            if(!code) return Swal.fire('Chú ý', 'Vui lòng nhập mã vận đơn cần tìm', 'info');
+            
+            Swal.fire({ title: 'Đang tìm kiếm...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            try {
+                const res = await fetch(`${API_URL}/search?code=${code}`);
+                if(!res.ok) throw new Error("Lỗi API tìm kiếm");
+                const logs = await res.json();
+                
+                if(logs.length === 0) {
+                    Swal.fire('Không tìm thấy', `Mã <b>${code}</b> chưa được ai xử lý!`, 'info');
+                } else {
+                    let html = `<div class="text-left max-h-80 overflow-y-auto"><p class="text-green-600 font-bold mb-3">Đã tìm thấy mã: ${code}</p>`;
+                    logs.forEach(log => {
+                        const empName = log.employees ? log.employees.name : "Nhân viên đã xóa";
+                        html += `<div class="p-3 border rounded mb-2 bg-blue-50">
+                            <p class="text-lg">👤 <b>Người xử lý:</b> <span class="text-blue-800 font-bold">${empName}</span></p>
+                            <p>🏷️ <b>Tên ca:</b> ${log.session_name || 'Không có tên'}</p>
+                            <p>🕒 <b>Thời gian xử lý:</b> ${log.work_date} (Khoảng ${log.start_time})</p>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                    Swal.fire({ title: 'Kết quả tìm kiếm', html: html, width: '600px' });
+                }
+            } catch(e) {
+                Swal.fire('Lỗi', 'Máy chủ tìm kiếm đang bận hoặc bị lỗi. Thử lại sau!', 'error');
+            }
+        }
+
+        // ==========================================
+        // MODULE: XEM CHI TIẾT MÃ TRONG LỊCH SỬ (MỚI)
+        // ==========================================
+        function showOrderCodesList(codesStr, sessionName) {
+            if(!codesStr) return Swal.fire('Trống', 'Ca này không có mã vận đơn nào được lưu.', 'info');
+            const codes = codesStr.split(', ');
+            let html = `<div class="text-left text-sm max-h-64 overflow-y-auto bg-gray-50 p-4 border rounded shadow-inner"><ol class="list-decimal list-inside">`;
+            codes.forEach(c => html += `<li class="border-b border-gray-200 py-1 text-gray-800 font-mono tracking-wide">${c}</li>`);
+            html += `</ol></div>`;
+            Swal.fire({ title: `📦 Chi tiết đơn: ${sessionName}`, html: html, confirmButtonText: 'Đóng' });
+        }
+
+
+        // ==========================================
         // MODULE: ĐA NHIỆM BẤM GIỜ & LƯU SẢN LƯỢNG
         // ==========================================
         document.getElementById('orderCodes').addEventListener('input', (e) => {
@@ -243,6 +306,8 @@
 
         function handleEmployeeChange() {
             currentEmpId = document.getElementById('empSelect').value;
+            const sessionNameInput = document.getElementById('sessionNameInput');
+
             if (!currentEmpId) {
                 resetSessionUI(true);
                 renderEmployeeListInInput();
@@ -262,6 +327,10 @@
                 textArea.classList.add('bg-white', 'border-blue-500', 'ring-2');
                 textArea.classList.remove('bg-gray-100');
                 textArea.placeholder = "Đang trong phiên làm việc. Dán mã vận đơn vào đây...";
+
+                // Xử lý Tên Ca
+                sessionNameInput.value = session.sessionName || '';
+                sessionNameInput.disabled = true;
 
                 updateStatusBlinker();
                 updateCounter();
@@ -283,6 +352,12 @@
             textArea.className = "w-full border-2 p-3 rounded bg-gray-100 text-gray-800 focus:outline-none transition-colors";
             textArea.placeholder = "Bấm BẮT ĐẦU để kích hoạt ô dán mã cho nhân viên này...";
 
+            const sessionNameInput = document.getElementById('sessionNameInput');
+            if (sessionNameInput) {
+                sessionNameInput.value = '';
+                sessionNameInput.disabled = false;
+            }
+
             document.getElementById('liveCounter').innerText = "0 đơn";
             document.getElementById('sessionStatus').classList.remove('text-green-600');
             document.getElementById('sessionStatus').classList.add('text-gray-800');
@@ -292,9 +367,17 @@
 
         function startSession() {
             if (!currentEmpId) return Swal.fire('Cảnh báo', 'Vui lòng chọn nhân viên!', 'warning');
+            
+            // Ép buộc nhập tên ca
+            const sessionNameInput = document.getElementById('sessionNameInput');
+            const sessionName = sessionNameInput.value.trim();
+            if (!sessionName) {
+                return Swal.fire('Cảnh báo', 'Bạn PHẢI NHẬP TÊN CA LÀM trước khi bấm Bắt Đầu!', 'warning');
+            }
+
             if (activeSessions[currentEmpId]) return;
 
-            activeSessions[currentEmpId] = { startTime: new Date(), codes: '' };
+            activeSessions[currentEmpId] = { startTime: new Date(), codes: '', sessionName: sessionName };
             handleEmployeeChange();
         }
 
@@ -314,9 +397,12 @@
 
             const session = activeSessions[currentEmpId];
             const codes = session.codes.split('\n').map(c => c.trim()).filter(c => c !== '');
-            const total_orders = [...new Set(codes)].length;
+            const uniqueCodes = [...new Set(codes)];
+            const total_orders = uniqueCodes.length;
 
             if (total_orders === 0) return Swal.fire('Lỗi', 'Chưa có mã vận đơn nào được nhập!', 'error');
+
+            const orderCodesString = uniqueCodes.join(', '); // Nối mảng thành chuỗi để lưu vào DB
 
             const sessionStartTime = session.startTime;
             const sessionEndTime = new Date();
@@ -345,7 +431,9 @@
                 end_time,
                 total_orders,
                 total_time_seconds: totalSeconds,
-                average_time_per_order: averageTimePerOrder
+                average_time_per_order: averageTimePerOrder,
+                session_name: session.sessionName,  // Gửi Tên Ca
+                order_codes: orderCodesString       // Gửi Mã Vận Đơn
             };
 
             try {
@@ -364,6 +452,7 @@
                     title: 'Thành công',
                     html: `<div class="text-left">
                         <p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p>
+                        <p class="mb-2"><strong>🏷️ Ca:</strong> ${session.sessionName}</p>
                         <p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p>
                         <p class="mb-2"><strong>⏱️ Thời gian bắt đầu:</strong> ${start_time}</p>
                         <p class="mb-2"><strong>⏱️ Thời gian kết thúc:</strong> ${end_time}</p>
@@ -380,6 +469,10 @@
                 if (message.includes('failed to fetch') || message.includes('networkerror') || message.includes('lỗi máy chủ') || message.includes('could not find the')) {
                     const safeData = { ...logData };
                     delete safeData.average_time_per_order;
+                    
+                    // VÁ LỖI TẠI ĐÂY: Đảm bảo Fallback cũng gửi Tên Ca và Mã Vận Đơn
+                    safeData.session_name = session.sessionName;
+                    safeData.order_codes = orderCodesString;
 
                     try {
                         const { data: supabaseData, error: supabaseError } = await supabaseClient.from('productivity_logs').insert([safeData]);
@@ -388,14 +481,14 @@
                         }
 
                         Swal.fire({
-                            title: 'Thành công',
+                            title: 'Thành công (Đã lưu qua Supabase)',
                             html: `<div class="text-left">
                                 <p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p>
+                                <p class="mb-2"><strong>🏷️ Ca:</strong> ${session.sessionName}</p>
                                 <p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p>
                                 <p class="mb-2"><strong>⏱️ Thời gian bắt đầu:</strong> ${start_time}</p>
                                 <p class="mb-2"><strong>⏱️ Thời gian kết thúc:</strong> ${end_time}</p>
                                 <p class="mb-2"><strong>⏳ Tổng thời gian ca:</strong> ${hours}h ${minutes}p ${seconds}s</p>
-                                <p class="mb-2"><strong>⏱️ Thời gian trung bình/đơn:</strong> ${averageTimePerOrder} giây</p>
                             </div>`,
                             icon: 'success'
                         });
@@ -408,6 +501,17 @@
                 } else {
                     Swal.fire('Lỗi', e.message || 'Không thể kết nối đến máy chủ Node.js', 'error');
                 }
+            }
+        }
+
+        function updateStatusBlinker() {
+            const statusDiv = document.getElementById('sessionStatus');
+            // Nếu nhân viên đang chọn có phiên làm việc trong activeSessions
+            if (currentEmpId && activeSessions[currentEmpId]) {
+                const sName = activeSessions[currentEmpId].sessionName || 'Đang làm việc';
+                statusDiv.innerHTML = `<span class="status-pulse"></span><span class="text-green-600 font-bold">${sName}</span>`;
+            } else {
+                statusDiv.innerHTML = `<span class="text-gray-800">Chưa bắt đầu</span>`;
             }
         }
 
@@ -440,7 +544,7 @@
                 let total = 0;
 
                 if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500 italic font-medium">Chưa có dữ liệu làm việc trong ngày này.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500 italic font-medium">Chưa có dữ liệu làm việc trong ngày này.</td></tr>';
                 } else {
                     data.forEach(log => {
                         total += log.total_orders;
@@ -470,14 +574,23 @@
                         }
                         const avgTimeStr = avgTime > 0 ? `${avgTime}s` : '--';
 
+                        // Xử lý an toàn dữ liệu Tên Ca và Danh sách Mã
+                        const sessionName = log.session_name ? log.session_name : '---';
+                        const safeSessionName = sessionName.replace(/'/g, "\\'");
+                        const safeCodes = log.order_codes ? log.order_codes.replace(/'/g, "\\'") : '';
+
                         tbody.innerHTML += `
                             <tr class="border-b hover:bg-white transition-colors">
-                                <td class="p-3 text-gray-700 font-semibold">${log.work_date}</td>
+                                <td class="p-3 text-gray-700">${log.work_date}</td>
+                                <td class="p-3 font-bold text-blue-800">${sessionName}</td>
                                 <td class="p-3 text-gray-600">${log.start_time}</td>
                                 <td class="p-3 text-gray-600">${log.end_time}</td>
                                 <td class="p-3 font-black text-green-600 text-right text-lg">+ ${log.total_orders}</td>
                                 <td class="p-3 text-gray-600 text-center">${timeStr}</td>
                                 <td class="p-3 text-gray-600 text-center">${avgTimeStr}</td>
+                                <td class="p-3 text-center">
+                                    <button onclick="showOrderCodesList('${safeCodes}', '${safeSessionName}')" class="bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors">👁️ Chi tiết</button>
+                                </td>
                             </tr>
                         `;
                     });
@@ -518,43 +631,43 @@
             // 2. Xóa trắng danh sách cũ và nạp danh sách mới
             select.innerHTML = '<option value="">-- Bấm để chọn nhân viên --</option>';
     
-    const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ');
-    employeesForSelect.forEach(emp => { 
-        const isWorking = Boolean(activeSessions[emp.id]);
-        const statusIcon = isWorking ? "🟢 ĐANG LÀM" : "⚪ Trống";
-        
-        const option = document.createElement('option');
-        option.value = emp.id;
-        option.text = `${emp.name} (${emp.role}) - [${statusIcon}]`;
-        
-        if(isWorking) {
-            option.style.fontWeight = "bold";
-            option.style.color = "#059669";
+            const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ');
+            employeesForSelect.forEach(emp => { 
+                const isWorking = Boolean(activeSessions[emp.id]);
+                const statusIcon = isWorking ? "🟢 ĐANG LÀM" : "⚪ Trống";
+                
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.text = `${emp.name} (${emp.role}) - [${statusIcon}]`;
+                
+                if(isWorking) {
+                    option.style.fontWeight = "bold";
+                    option.style.color = "#059669";
+                }
+                
+                select.appendChild(option);
+            });
+            
+            select.value = savedId;
+            loadTeamNamesForSelect();
+            updateTeamFields();
+            
+            // Cập nhật dropdown tổ trưởng
+            const teamLeadSelect = document.getElementById('empTeamLead');
+            if (teamLeadSelect) {
+                const currentValue = teamLeadSelect.value;
+                teamLeadSelect.innerHTML = '<option value="">-- Tổ trưởng quản lý (nếu là nhân viên) --</option>';
+                allEmployees.filter(e => e.role && e.role.includes('Tổ trưởng')).forEach(lead => {
+                    const opt = document.createElement('option');
+                    opt.value = lead.id;
+                    opt.text = lead.name;
+                    teamLeadSelect.appendChild(opt);
+                });
+                teamLeadSelect.value = currentValue;
+            }
+            
+            renderEmployeeListInInput();
         }
-        
-        select.appendChild(option);
-    });
-    
-    select.value = savedId;
-    loadTeamNamesForSelect();
-    updateTeamFields();
-    
-    // Cập nhật dropdown tổ trưởng
-    const teamLeadSelect = document.getElementById('empTeamLead');
-    if (teamLeadSelect) {
-        const currentValue = teamLeadSelect.value;
-        teamLeadSelect.innerHTML = '<option value="">-- Tổ trưởng quản lý (nếu là nhân viên) --</option>';
-        allEmployees.filter(e => e.role && e.role.includes('Tổ trưởng')).forEach(lead => {
-            const opt = document.createElement('option');
-            opt.value = lead.id;
-            opt.text = lead.name;
-            teamLeadSelect.appendChild(opt);
-        });
-        teamLeadSelect.value = currentValue;
-    }
-    
-    renderEmployeeListInInput();
-}
 
         function selectEmployee(empId) {
             currentEmpId = empId;
@@ -1227,16 +1340,6 @@
             const dataDaily = await resDaily.json();
             if(dailyChartInstance) dailyChartInstance.destroy();
             dailyChartInstance = new Chart(document.getElementById('dailyChart').getContext('2d'), { type: 'line', data: { labels: dataDaily.map(d => d.work_date), datasets: [{ label: 'Tổng kho', data: dataDaily.map(d => d.total_daily_orders), borderColor: '#10b981', tension: 0.1, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.2)' }] } });
-        }
-
-        function updateStatusBlinker() {
-            const statusDiv = document.getElementById('sessionStatus');
-            // Nếu nhân viên đang chọn có phiên làm việc trong activeSessions
-            if (currentEmpId && activeSessions[currentEmpId]) {
-                statusDiv.innerHTML = `<span class="status-pulse"></span><span class="text-green-600">Đang làm việc...</span>`;
-            } else {
-                statusDiv.innerHTML = `<span class="text-gray-800">Chưa bắt đầu</span>`;
-            }
         }
 
         // Init App
