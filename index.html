@@ -215,7 +215,7 @@
 
     <script>
         // ==========================================
-        // CẤU HÌNH HỆ THỐNG (ĐANG TEST LOCAL)
+        // CẤU HÌNH HỆ THỐNG
         // ==========================================
         const API_URL = 'https://backend-kho.onrender.com/api'; 
         
@@ -225,8 +225,60 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL_FRONTEND, SUPABASE_ANON_KEY_FRONTEND);
 
         let allEmployees = [];
-        let activeSessions = {}; // Lưu trữ giỏ hàng độc lập cho từng người
+        let activeSessions = {}; // Giỏ hàng độc lập
         let currentEmpId = null;
+
+        // ==========================================
+        // KHÔI PHỤC DỮ LIỆU TỪ LOCAL STORAGE (CHỐNG F5)
+        // ==========================================
+        function loadSessionsFromStorage() {
+            const saved = localStorage.getItem('warehouse_active_sessions');
+            if (saved) {
+                try {
+                    activeSessions = JSON.parse(saved);
+                    for (let id in activeSessions) {
+                        if (activeSessions[id].startTime) {
+                            activeSessions[id].startTime = new Date(activeSessions[id].startTime);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Lỗi đọc Storage", e);
+                    activeSessions = {};
+                }
+            }
+        }
+        loadSessionsFromStorage(); // Gọi ngay khi tải trang
+
+        // ==========================================
+        // ĐỒNG BỘ TRẠNG THÁI "ĐANG LÀM" VỚI SERVER (MỖI 5 GIÂY)
+        // ==========================================
+        setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/active-sessions`);
+                if (res.ok) {
+                    const serverSessions = await res.json();
+                    let needsRender = false;
+                    for (let emp of allEmployees) {
+                        const srv = serverSessions[emp.id];
+                        const loc = activeSessions[emp.id];
+                        // Nếu server báo có người làm, mà máy mình chưa có => Đánh dấu là Remote
+                        if (srv && !loc) {
+                            activeSessions[emp.id] = { isRemote: true, sessionName: srv.sessionName };
+                            needsRender = true;
+                        } 
+                        // Nếu server báo đã nghỉ, mà máy mình vẫn hiện Remote => Xóa đi
+                        else if (!srv && loc && loc.isRemote) {
+                            delete activeSessions[emp.id];
+                            needsRender = true;
+                        }
+                    }
+                    if (needsRender) {
+                        renderEmployeeListInInput();
+                        if (currentEmpId) handleEmployeeChange(); // Cập nhật ngay UI nếu đang xem người đó
+                    }
+                }
+            } catch (e) { /* Bỏ qua nếu lỗi mạng */ }
+        }, 5000);
 
         // ==========================================
         // CHUYỂN TAB CƠ BẢN
@@ -241,19 +293,16 @@
         }
 
         // ==========================================
-        // MODULE: TÌM KIẾM MÃ VẬN ĐƠN (MỚI)
+        // MODULE: TÌM KIẾM MÃ VẬN ĐƠN
         // ==========================================
         async function searchOrderCode() {
             const code = document.getElementById('globalSearchInput').value.trim();
             if(!code) return Swal.fire('Chú ý', 'Vui lòng nhập mã vận đơn cần tìm', 'info');
-            
             Swal.fire({ title: 'Đang tìm kiếm...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            
             try {
                 const res = await fetch(`${API_URL}/search?code=${code}`);
                 if(!res.ok) throw new Error("Lỗi API tìm kiếm");
                 const logs = await res.json();
-                
                 if(logs.length === 0) {
                     Swal.fire('Không tìm thấy', `Mã <b>${code}</b> chưa được ai xử lý!`, 'info');
                 } else {
@@ -269,13 +318,11 @@
                     html += `</div>`;
                     Swal.fire({ title: 'Kết quả tìm kiếm', html: html, width: '600px' });
                 }
-            } catch(e) {
-                Swal.fire('Lỗi', 'Máy chủ tìm kiếm đang bận hoặc bị lỗi. Thử lại sau!', 'error');
-            }
+            } catch(e) { Swal.fire('Lỗi', 'Máy chủ tìm kiếm đang bận hoặc bị lỗi. Thử lại sau!', 'error'); }
         }
 
         // ==========================================
-        // MODULE: XEM CHI TIẾT MÃ TRONG LỊCH SỬ (MỚI)
+        // MODULE: XEM CHI TIẾT MÃ TRONG LỊCH SỬ
         // ==========================================
         function showOrderCodesList(codesStr, sessionName) {
             if(!codesStr) return Swal.fire('Trống', 'Ca này không có mã vận đơn nào được lưu.', 'info');
@@ -291,17 +338,20 @@
         // MODULE: ĐA NHIỆM BẤM GIỜ & LƯU SẢN LƯỢNG
         // ==========================================
         document.getElementById('orderCodes').addEventListener('input', (e) => {
-            if (currentEmpId && activeSessions[currentEmpId]) {
+            if (currentEmpId && activeSessions[currentEmpId] && !activeSessions[currentEmpId].isRemote) {
                 activeSessions[currentEmpId].codes = e.target.value;
                 updateCounter();
             }
         });
 
         function updateCounter() {
-            if (!currentEmpId || !activeSessions[currentEmpId]) return;
+            if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
             const codes = activeSessions[currentEmpId].codes.split('\n').map(c => c.trim()).filter(c => c !== '');
             const uniqueCodes = [...new Set(codes)];
             document.getElementById('liveCounter').innerText = `${uniqueCodes.length} đơn`;
+            
+            // Cập nhật LocalStorage mỗi khi gõ mã mới
+            localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
         }
 
         function handleEmployeeChange() {
@@ -316,24 +366,41 @@
 
             const session = activeSessions[currentEmpId];
             if (session) {
-                document.getElementById('btnStart').disabled = true;
-                document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
-                document.getElementById('btnEnd').disabled = false;
-                document.getElementById('btnEnd').classList.remove('opacity-50', 'cursor-not-allowed');
+                if (session.isRemote) {
+                    // Máy khác đang thao tác
+                    document.getElementById('btnStart').disabled = true;
+                    document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('btnEnd').disabled = true;
+                    document.getElementById('btnEnd').classList.add('opacity-50', 'cursor-not-allowed');
 
-                const textArea = document.getElementById('orderCodes');
-                textArea.disabled = false;
-                textArea.value = session.codes;
-                textArea.classList.add('bg-white', 'border-blue-500', 'ring-2');
-                textArea.classList.remove('bg-gray-100');
-                textArea.placeholder = "Đang trong phiên làm việc. Dán mã vận đơn vào đây...";
+                    const textArea = document.getElementById('orderCodes');
+                    textArea.disabled = true;
+                    textArea.value = "Người khác đang thao tác ca này trên máy của họ...";
+                    textArea.classList.add('bg-gray-100');
+                    textArea.classList.remove('bg-white', 'border-blue-500', 'ring-2');
 
-                // Xử lý Tên Ca
-                sessionNameInput.value = session.sessionName || '';
-                sessionNameInput.disabled = true;
+                    sessionNameInput.value = session.sessionName || 'Đang làm việc...';
+                    sessionNameInput.disabled = true;
+                    document.getElementById('liveCounter').innerText = "---";
+                } else {
+                    // Mình đang thao tác
+                    document.getElementById('btnStart').disabled = true;
+                    document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('btnEnd').disabled = false;
+                    document.getElementById('btnEnd').classList.remove('opacity-50', 'cursor-not-allowed');
 
+                    const textArea = document.getElementById('orderCodes');
+                    textArea.disabled = false;
+                    textArea.value = session.codes || '';
+                    textArea.classList.add('bg-white', 'border-blue-500', 'ring-2');
+                    textArea.classList.remove('bg-gray-100');
+                    textArea.placeholder = "Đang trong phiên làm việc. Dán mã vận đơn vào đây...";
+
+                    sessionNameInput.value = session.sessionName || '';
+                    sessionNameInput.disabled = true;
+                    updateCounter();
+                }
                 updateStatusBlinker();
-                updateCounter();
             } else {
                 resetSessionUI(false);
             }
@@ -365,35 +432,45 @@
             document.getElementById('sessionTimer').innerText = "";
         }
 
-        function startSession() {
+        async function startSession() {
             if (!currentEmpId) return Swal.fire('Cảnh báo', 'Vui lòng chọn nhân viên!', 'warning');
             
-            // Ép buộc nhập tên ca
             const sessionNameInput = document.getElementById('sessionNameInput');
             const sessionName = sessionNameInput.value.trim();
             if (!sessionName) {
                 return Swal.fire('Cảnh báo', 'Bạn PHẢI NHẬP TÊN CA LÀM trước khi bấm Bắt Đầu!', 'warning');
             }
 
-            if (activeSessions[currentEmpId]) return;
+            // Nếu máy khác đang làm thì chặn
+            if (activeSessions[currentEmpId] && activeSessions[currentEmpId].isRemote) return;
 
             activeSessions[currentEmpId] = { startTime: new Date(), codes: '', sessionName: sessionName };
+            
+            // LƯU VÀO TRÌNH DUYỆT (CHỐNG F5)
+            localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
             handleEmployeeChange();
+
+            // BÁO CÁO LÊN SERVER ĐỂ MÁY KHÁC THẤY CHẤM XANH
+            fetch(`${API_URL}/active-sessions`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: currentEmpId, action: 'start', sessionData: { sessionName: sessionName } })
+            }).catch(()=>{});
         }
 
+        // Đồng hồ đếm giờ an toàn
         setInterval(() => {
-            if (currentEmpId && activeSessions[currentEmpId]) {
-                const st = activeSessions[currentEmpId].startTime;
+            if (currentEmpId && activeSessions[currentEmpId] && !activeSessions[currentEmpId].isRemote) {
+                const st = new Date(activeSessions[currentEmpId].startTime);
                 const now = new Date();
                 const diff = Math.floor((now - st) / 1000);
                 const m = Math.floor(diff / 60);
                 const s = diff % 60;
-                document.getElementById('sessionTimer').innerText = `🕒 Thời gian: ${m}p ${s}s (Bắt đầu từ: ${st.toLocaleTimeString('vi-VN', {hour12:false})})`;
+                document.getElementById('sessionTimer').innerText = `🕒 Thời gian: ${m}p ${s}s`;
             }
         }, 1000);
 
         async function endSessionAndSave() {
-            if (!currentEmpId || !activeSessions[currentEmpId]) return;
+            if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
 
             const session = activeSessions[currentEmpId];
             const codes = session.codes.split('\n').map(c => c.trim()).filter(c => c !== '');
@@ -402,51 +479,35 @@
 
             if (total_orders === 0) return Swal.fire('Lỗi', 'Chưa có mã vận đơn nào được nhập!', 'error');
 
-            const orderCodesString = uniqueCodes.join(', '); // Nối mảng thành chuỗi để lưu vào DB
+            const orderCodesString = uniqueCodes.join(', ');
 
-            const sessionStartTime = session.startTime;
+            const sessionStartTime = new Date(session.startTime);
             const sessionEndTime = new Date();
             const work_date = sessionStartTime.toISOString().split('T')[0];
             const start_time = sessionStartTime.toLocaleTimeString('vi-VN', {hour12: false});
             const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
 
-            // Tính toán thời gian
             const totalSeconds = Math.floor((sessionEndTime - sessionStartTime) / 1000);
-            const totalMinutes = totalSeconds / 60;
-            const totalHours = totalMinutes / 60;
             const averageTimePerOrder = (totalSeconds / total_orders).toFixed(1);
             
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-
             const empName = document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text;
 
             Swal.fire({ title: 'Đang lưu dữ liệu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
             const logData = {
-                employee_id: currentEmpId,
-                work_date,
-                start_time,
-                end_time,
-                total_orders,
-                total_time_seconds: totalSeconds,
-                average_time_per_order: averageTimePerOrder,
-                session_name: session.sessionName,  // Gửi Tên Ca
-                order_codes: orderCodesString       // Gửi Mã Vận Đơn
+                employee_id: currentEmpId, work_date, start_time, end_time, total_orders,
+                total_time_seconds: totalSeconds, average_time_per_order: averageTimePerOrder,
+                session_name: session.sessionName, order_codes: orderCodesString
             };
 
             try {
                 const res = await fetch(`${API_URL}/logs`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(logData)
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logData)
                 });
-
-                if (!res.ok) {
-                    const errorText = await res.text().catch(() => 'Lỗi máy chủ');
-                    throw new Error(errorText || 'Lỗi máy chủ');
-                }
+                if (!res.ok) throw new Error('Lỗi máy chủ');
 
                 Swal.fire({
                     title: 'Thành công',
@@ -462,54 +523,50 @@
                     icon: 'success'
                 });
 
+                // BÁO CHO SERVER XÓA CHẤM XANH
+                fetch(`${API_URL}/active-sessions`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: currentEmpId, action: 'end' })
+                }).catch(()=>{});
+
+                // XÓA KHỎI BỘ NHỚ LƯU TẠM
                 delete activeSessions[currentEmpId];
+                localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                 handleEmployeeChange();
             } catch (e) {
-                const message = e?.message?.toLowerCase() || '';
-                if (message.includes('failed to fetch') || message.includes('networkerror') || message.includes('lỗi máy chủ') || message.includes('could not find the')) {
-                    const safeData = { ...logData };
-                    delete safeData.average_time_per_order;
+                // Fallback Supabase
+                const safeData = { ...logData };
+                delete safeData.average_time_per_order;
+                safeData.session_name = session.sessionName;
+                safeData.order_codes = orderCodesString;
+
+                try {
+                    const { error: supabaseError } = await supabaseClient.from('productivity_logs').insert([safeData]);
+                    if (supabaseError) throw supabaseError;
                     
-                    // VÁ LỖI TẠI ĐÂY: Đảm bảo Fallback cũng gửi Tên Ca và Mã Vận Đơn
-                    safeData.session_name = session.sessionName;
-                    safeData.order_codes = orderCodesString;
+                    Swal.fire('Thành công', 'Đã lưu qua Supabase', 'success');
 
-                    try {
-                        const { data: supabaseData, error: supabaseError } = await supabaseClient.from('productivity_logs').insert([safeData]);
-                        if (supabaseError) {
-                            throw supabaseError;
-                        }
+                    // BÁO CHO SERVER XÓA CHẤM XANH
+                    fetch(`${API_URL}/active-sessions`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ employeeId: currentEmpId, action: 'end' })
+                    }).catch(()=>{});
 
-                        Swal.fire({
-                            title: 'Thành công (Đã lưu qua Supabase)',
-                            html: `<div class="text-left">
-                                <p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p>
-                                <p class="mb-2"><strong>🏷️ Ca:</strong> ${session.sessionName}</p>
-                                <p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p>
-                                <p class="mb-2"><strong>⏱️ Thời gian bắt đầu:</strong> ${start_time}</p>
-                                <p class="mb-2"><strong>⏱️ Thời gian kết thúc:</strong> ${end_time}</p>
-                                <p class="mb-2"><strong>⏳ Tổng thời gian ca:</strong> ${hours}h ${minutes}p ${seconds}s</p>
-                            </div>`,
-                            icon: 'success'
-                        });
-
-                        delete activeSessions[currentEmpId];
-                        handleEmployeeChange();
-                    } catch (supabaseError) {
-                        Swal.fire('Lỗi', 'Không thể lưu dữ liệu vào Supabase: ' + (supabaseError.message || supabaseError), 'error');
-                    }
-                } else {
-                    Swal.fire('Lỗi', e.message || 'Không thể kết nối đến máy chủ Node.js', 'error');
+                    delete activeSessions[currentEmpId];
+                    localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
+                    handleEmployeeChange();
+                } catch (err) {
+                    Swal.fire('Lỗi', 'Không thể lưu dữ liệu: ' + (err.message || err), 'error');
                 }
             }
         }
 
         function updateStatusBlinker() {
             const statusDiv = document.getElementById('sessionStatus');
-            // Nếu nhân viên đang chọn có phiên làm việc trong activeSessions
             if (currentEmpId && activeSessions[currentEmpId]) {
                 const sName = activeSessions[currentEmpId].sessionName || 'Đang làm việc';
-                statusDiv.innerHTML = `<span class="status-pulse"></span><span class="text-green-600 font-bold">${sName}</span>`;
+                const isRem = activeSessions[currentEmpId].isRemote ? '(Máy khác)' : '';
+                statusDiv.innerHTML = `<span class="status-pulse"></span><span class="text-green-600 font-bold">${sName} ${isRem}</span>`;
             } else {
                 statusDiv.innerHTML = `<span class="text-gray-800">Chưa bắt đầu</span>`;
             }
@@ -523,7 +580,7 @@
         function openHistoryModal(empId, empName) {
             currentHistoryEmpId = empId;
             document.getElementById('historyModalTitle').innerText = `👤 Lịch sử làm việc: ${empName}`;
-            document.getElementById('historyDateFilter').valueAsDate = new Date(); // Mặc định hôm nay
+            document.getElementById('historyDateFilter').valueAsDate = new Date();
             document.getElementById('historyModal').classList.remove('hidden');
             fetchAndRenderHistory();
         }
@@ -574,7 +631,6 @@
                         }
                         const avgTimeStr = avgTime > 0 ? `${avgTime}s` : '--';
 
-                        // Xử lý an toàn dữ liệu Tên Ca và Danh sách Mã
                         const sessionName = log.session_name ? log.session_name : '---';
                         const safeSessionName = sessionName.replace(/'/g, "\\'");
                         const safeCodes = log.order_codes ? log.order_codes.replace(/'/g, "\\'") : '';
@@ -597,7 +653,7 @@
                 }
                 document.getElementById('historyTotalOrders').innerText = `Tổng sản lượng: ${total} đơn`;
             } catch (error) {
-                Swal.fire('Chú ý', 'Hãy đảm bảo bạn đã dán code API Lịch sử vào server.js và chạy lại server nhé!', 'info');
+                Swal.fire('Chú ý', 'Đang mất kết nối với máy chủ Lịch sử!', 'info');
             }
         }
 
@@ -611,30 +667,24 @@
                 allEmployees = await res.json();
                 return allEmployees;
             } catch (error) {
-                console.warn('Không lấy được dữ liệu từ backend. Fallback sang Supabase trực tiếp.', error);
                 const { data, error: supabaseError } = await supabaseClient.from('employees').select('*');
-                if (supabaseError) {
-                    throw supabaseError;
-                }
+                if (supabaseError) throw supabaseError;
                 allEmployees = data;
                 return allEmployees;
             }
         }
 
         async function loadEmployeesForSelect() {
-            // 1. Gọi đến server để lấy danh sách nhân viên mới nhất
             await fetchEmployees();
-            
             const select = document.getElementById('empSelect');
-            const savedId = select.value; // Giữ lại ID người đang chọn để không bị nhảy trang
-            
-            // 2. Xóa trắng danh sách cũ và nạp danh sách mới
+            const savedId = select.value; 
             select.innerHTML = '<option value="">-- Bấm để chọn nhân viên --</option>';
     
             const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ');
             employeesForSelect.forEach(emp => { 
                 const isWorking = Boolean(activeSessions[emp.id]);
-                const statusIcon = isWorking ? "🟢 ĐANG LÀM" : "⚪ Trống";
+                const isRem = (isWorking && activeSessions[emp.id].isRemote) ? "(Máy khác)" : "";
+                const statusIcon = isWorking ? `🟢 ĐANG LÀM ${isRem}` : "⚪ Trống";
                 
                 const option = document.createElement('option');
                 option.value = emp.id;
@@ -644,7 +694,6 @@
                     option.style.fontWeight = "bold";
                     option.style.color = "#059669";
                 }
-                
                 select.appendChild(option);
             });
             
@@ -652,11 +701,10 @@
             loadTeamNamesForSelect();
             updateTeamFields();
             
-            // Cập nhật dropdown tổ trưởng
             const teamLeadSelect = document.getElementById('empTeamLead');
             if (teamLeadSelect) {
                 const currentValue = teamLeadSelect.value;
-                teamLeadSelect.innerHTML = '<option value="">-- Tổ trưởng quản lý (nếu là nhân viên) --</option>';
+                teamLeadSelect.innerHTML = '<option value="">-- Tổ trưởng quản lý --</option>';
                 allEmployees.filter(e => e.role && e.role.includes('Tổ trưởng')).forEach(lead => {
                     const opt = document.createElement('option');
                     opt.value = lead.id;
@@ -665,7 +713,6 @@
                 });
                 teamLeadSelect.value = currentValue;
             }
-            
             renderEmployeeListInInput();
         }
 
@@ -682,10 +729,7 @@
             const currentValue = select.value || '';
             select.innerHTML = '<option value="">-- Chọn tổ --</option>';
             
-            const teamNames = [...new Set(allEmployees
-                .filter(e => e.team_name)
-                .map(e => e.team_name))];
-            
+            const teamNames = [...new Set(allEmployees.filter(e => e.team_name).map(e => e.team_name))];
             teamNames.forEach(teamName => {
                 const opt = document.createElement('option');
                 opt.value = teamName;
@@ -715,6 +759,7 @@
 
             allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
                 const isWorking = Boolean(activeSessions[emp.id]);
+                const isRem = (isWorking && activeSessions[emp.id].isRemote) ? '(Máy khác)' : '';
                 const isSelected = String(currentEmpId) === String(emp.id);
                 const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
                 const avatar = emp.avatar_url || defaultAvatar;
@@ -727,8 +772,8 @@
                                 <div class="font-bold text-gray-800">${emp.name}</div>
                                 <div class="text-xs text-gray-500">${emp.role}</div>
                             </div>
-                            <div class="flex items-center gap-2 text-xs font-bold ${isWorking ? 'text-green-700' : 'text-gray-500'}">
-                                ${isWorking ? '<span class="status-pulse"></span><span>Đang làm</span>' : '<span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-300"></span><span>Rảnh</span>'}
+                            <div class="flex items-center gap-2 text-xs font-bold ${isWorking ? (isRem ? 'text-orange-500' : 'text-green-700') : 'text-gray-500'}">
+                                ${isWorking ? `<span class="status-pulse" style="${isRem ? 'background-color:#f97316' : ''}"></span><span>Đang làm ${isRem}</span>` : '<span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-300"></span><span>Rảnh</span>'}
                             </div>
                         </div>
                     </button>`;
@@ -778,27 +823,19 @@
                 if (role === 'Nhân viên' || role === 'Tổ trưởng') {
                     const select = document.getElementById('empTeamNameSelect');
                     const selectedTeam = select?.value || '';
-                    if (!selectedTeam) {
-                        Swal.fire('Cảnh báo', 'Vui lòng chọn tổ!', 'warning');
-                        return;
-                    }
+                    if (!selectedTeam) return Swal.fire('Cảnh báo', 'Vui lòng chọn tổ!', 'warning');
                     team_name = selectedTeam;
 
                     if (role === 'Tổ trưởng') {
                         const existingLead = allEmployees.find(e => e.team_name === selectedTeam && e.role === 'Tổ trưởng');
-                        if (existingLead) {
-                            Swal.fire('Cảnh báo', `Tổ "${selectedTeam}" đã có tổ trưởng.`, 'warning');
-                            return;
-                        }
+                        if (existingLead) return Swal.fire('Cảnh báo', `Tổ "${selectedTeam}" đã có tổ trưởng.`, 'warning');
                     } else {
                         const teamLead = allEmployees.find(e => e.team_name === selectedTeam && e.role === 'Tổ trưởng');
-                        if (teamLead) {
-                            team_lead_id = teamLead.id;
-                        }
+                        if (teamLead) team_lead_id = teamLead.id;
                     }
                 }
 
-                if(!name) { Swal.fire('Cảnh báo', 'Vui lòng nhập tên!', 'warning'); return; }
+                if(!name) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên!', 'warning');
 
                 Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
@@ -807,41 +844,25 @@
                     const file = fileInput.files[0];
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
                     const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('avatars').upload(fileName, file);
                     if (uploadError) throw new Error('Lỗi tải ảnh: ' + uploadError.message);
-
                     const { data: publicUrlData } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
                     finalAvatarUrl = publicUrlData.publicUrl;
                 }
 
                 empData = { name, role, dob, hometown, join_date: joinDate, avatar_url: finalAvatarUrl, team_lead_id, team_name };
                 const res = await fetch(`${API_URL}/employees`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(empData)
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(empData)
                 });
-
-                if(!res.ok) {
-                    const errorData = await res.json().catch(() => null);
-                    throw new Error(errorData?.error || 'Backend từ chối kết nối');
-                }
-
+                if(!res.ok) throw new Error('Backend từ chối kết nối');
                 Swal.fire('Thành công', 'Đã thêm nhân viên', 'success');
             } catch(error) {
-                console.warn('Backend không phản hồi, thử lưu trực tiếp qua Supabase...', error);
                 if (error.message && error.message.toLowerCase().includes('failed to fetch') && empData) {
                     const { data: supabaseData, error: supabaseError } = await supabaseClient.from('employees').insert([empData]).select();
-                    if (supabaseError) {
-                        console.error('Supabase trực tiếp thất bại:', supabaseError);
-                        Swal.fire('Lỗi Hệ Thống', supabaseError.message || 'Không lưu được nhân viên', 'error');
-                        return;
-                    }
+                    if (supabaseError) return Swal.fire('Lỗi Hệ Thống', supabaseError.message, 'error');
                     Swal.fire('Thành công', 'Đã thêm nhân viên trực tiếp qua Supabase', 'success');
                 } else {
-                    console.error('addEmployee failed:', error);
-                    Swal.fire('Lỗi Hệ Thống', error.message || 'Có lỗi xảy ra', 'error');
-                    return;
+                    return Swal.fire('Lỗi Hệ Thống', error.message, 'error');
                 }
             }
 
@@ -857,41 +878,18 @@
 
         async function addTeam() {
             const teamName = document.getElementById('newTeamName').value.trim();
+            if (!teamName) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên tổ!', 'warning');
             
-            if (!teamName) {
-                Swal.fire('Cảnh báo', 'Vui lòng nhập tên tổ!', 'warning');
-                return;
-            }
             await fetchEmployees();
-            if (allEmployees.some(e => e.team_name === teamName)) {
-                Swal.fire('Cảnh báo', 'Tổ này đã tồn tại!', 'warning');
-                return;
-            }
+            if (allEmployees.some(e => e.team_name === teamName)) return Swal.fire('Cảnh báo', 'Tổ này đã tồn tại!', 'warning');
 
-            let teamData = null;
+            let teamData = { name: teamName, role: 'Tổ', team_name: teamName, hometown: '', skills: '', avatar_url: '' };
             try {
                 Swal.fire({ title: 'Đang tạo tổ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-                teamData = {
-                    name: teamName,
-                    role: 'Tổ',
-                    team_name: teamName,
-                    hometown: '',
-                    skills: '',
-                    avatar_url: ''
-                };
-                    
                 const res = await fetch(`${API_URL}/employees`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(teamData)
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(teamData)
                 });
-
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => null);
-                    throw new Error(errorData?.error || 'Không tạo được tổ');
-                }
-
+                if (!res.ok) throw new Error('Không tạo được tổ');
                 Swal.fire('Thành công', `Đã tạo tổ "${teamName}"`, 'success');
                 document.getElementById('newTeamName').value = '';
                 loadEmployeesTable();
@@ -900,11 +898,8 @@
                 renderTeamList();
             } catch (error) {
                 if (error.message && error.message.toLowerCase().includes('failed to fetch')) {
-                    const { data: supabaseData, error: supabaseError } = await supabaseClient.from('employees').insert([teamData]).select();
-                    if (supabaseError) {
-                        Swal.fire('Lỗi', supabaseError.message || 'Không tạo được tổ', 'error');
-                        return;
-                    }
+                    const { error: supabaseError } = await supabaseClient.from('employees').insert([teamData]).select();
+                    if (supabaseError) return Swal.fire('Lỗi', supabaseError.message, 'error');
                     Swal.fire('Thành công', `Đã tạo tổ "${teamName}" trực tiếp qua Supabase`, 'success');
                     document.getElementById('newTeamName').value = '';
                     loadEmployeesTable();
@@ -920,138 +915,77 @@
         async function deleteTeam(teamId) {
             const team = allEmployees.find(e => String(e.id) === String(teamId));
             const teamName = team ? team.team_name : 'tổ này';
-            
             const result = await Swal.fire({
-                title: `Xác nhận xóa tổ ${teamName}`,
-                text: 'Hành động này sẽ chuyển nhân viên trong tổ về trạng thái chưa gán tổ.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Xóa Tổ',
-                cancelButtonText: 'Hủy',
-                reverseButtons: true
+                title: `Xác nhận xóa tổ ${teamName}`, text: 'Nhân viên sẽ về trạng thái chưa gán tổ.',
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa Tổ', cancelButtonText: 'Hủy', reverseButtons: true
             });
-            
             if (!result.isConfirmed) return;
 
             try {
                 const teamMembers = allEmployees.filter(e => e.team_name === teamName && e.role !== 'Tổ');
                 for (const member of teamMembers) {
                     await fetch(`${API_URL}/employees/${member.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ team_lead_id: null, team_name: null })
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_lead_id: null, team_name: null })
                     });
                 }
-                
                 const res = await fetch(`${API_URL}/employees/${teamId}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Không xóa được tổ');
-
                 Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
-                loadEmployeesTable();
-                loadEmployeesForSelect();
-                renderOrgChart();
-                renderTeamList();
-            } catch (error) {
-                Swal.fire('Lỗi', error.message, 'error');
-            }
+                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
+            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
         }
 
         async function deleteTeamByName(teamName) {
             const result = await Swal.fire({
-                title: `Xác nhận xóa tổ ${teamName}`,
-                text: 'Hành động này sẽ chuyển tổ trưởng và nhân viên trong tổ về trạng thái chưa gán tổ.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Xóa Tổ',
-                cancelButtonText: 'Hủy',
-                reverseButtons: true
+                title: `Xác nhận xóa tổ ${teamName}`, text: 'Tổ trưởng và nhân viên sẽ về trạng thái chưa gán tổ.',
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa Tổ', cancelButtonText: 'Hủy', reverseButtons: true
             });
-            
             if (!result.isConfirmed) return;
 
             try {
                 Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
                 const membersToUpdate = allEmployees.filter(e => e.team_name === teamName);
                 for (const member of membersToUpdate) {
                     await fetch(`${API_URL}/employees/${member.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ team_lead_id: null, team_name: null })
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_lead_id: null, team_name: null })
                     });
                 }
-
                 Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
-                loadEmployeesTable();
-                loadEmployeesForSelect();
-                renderOrgChart();
-                renderTeamList();
-            } catch (error) {
-                Swal.fire('Lỗi', error.message, 'error');
-            }
+                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
+            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
         }
 
         async function deleteEmployee(empId) {
             const emp = allEmployees.find(e => String(e.id) === String(empId));
-            if (!emp) {
-                Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
-                return;
-            }
+            if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
 
             const result = await Swal.fire({
-                title: `Xác nhận xóa nhân viên`,
-                text: `Bạn có chắc chắn muốn xóa ${emp.name}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Xóa',
-                cancelButtonText: 'Hủy',
-                reverseButtons: true
+                title: `Xác nhận xóa nhân viên`, text: `Bạn có chắc chắn muốn xóa ${emp.name}?`,
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', reverseButtons: true
             });
-            
             if (!result.isConfirmed) return;
 
             try {
                 Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
                 const res = await fetch(`${API_URL}/employees/${empId}`, { method: 'DELETE' });
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => null);
-                    throw new Error(errorData?.error || 'Không xóa được nhân viên');
-                }
-
+                if (!res.ok) throw new Error('Không xóa được nhân viên');
                 Swal.fire('Đã xóa', `${emp.name} đã được xóa.`, 'success');
-                loadEmployeesTable();
-                loadEmployeesForSelect();
-                renderOrgChart();
+                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
             } catch (error) {
                 if (error.message && error.message.toLowerCase().includes('failed to fetch')) {
                     try {
-                        const { error: logError } = await supabaseClient.from('productivity_logs').delete().eq('employee_id', empId);
-                        if (logError) throw logError;
-
-                        const { error: empError } = await supabaseClient.from('employees').delete().eq('id', empId);
-                        if (empError) throw empError;
-
+                        await supabaseClient.from('productivity_logs').delete().eq('employee_id', empId);
+                        await supabaseClient.from('employees').delete().eq('id', empId);
                         Swal.fire('Đã xóa', `${emp.name} đã được xóa trực tiếp qua Supabase.`, 'success');
-                        loadEmployeesTable();
-                        loadEmployeesForSelect();
-                        renderOrgChart();
-                    } catch (supabaseError) {
-                        console.error('Supabase xóa nhân viên thất bại:', supabaseError);
-                        Swal.fire('Lỗi', supabaseError.message || 'Không xóa được nhân viên', 'error');
-                    }
-                } else {
-                    Swal.fire('Lỗi', error.message, 'error');
-                }
+                        loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
+                    } catch (supabaseError) { Swal.fire('Lỗi', supabaseError.message, 'error'); }
+                } else { Swal.fire('Lỗi', error.message, 'error'); }
             }
         }
 
         async function openEditModal(empId) {
             const emp = allEmployees.find(e => String(e.id) === String(empId));
-            if (!emp) {
-                Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
-                return;
-            }
+            if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
 
             const { value: formValues } = await Swal.fire({
                 title: 'Chỉnh sửa hồ sơ nhân viên',
@@ -1059,113 +993,63 @@
                     <div class="text-left">
                         <label class="block text-sm font-bold mb-1">Họ và Tên:</label>
                         <input type="text" id="editName" class="w-full border p-2 rounded mb-3" value="${emp.name}">
-                        
                         <label class="block text-sm font-bold mb-1">Vị trí:</label>
                         <select id="editRole" class="w-full border p-2 rounded mb-3">
                             <option value="Quản lý" ${emp.role === 'Quản lý' ? 'selected' : ''}>Quản lý</option>
                             <option value="Tổ trưởng" ${emp.role === 'Tổ trưởng' ? 'selected' : ''}>Tổ trưởng</option>
                             <option value="Nhân viên" ${emp.role === 'Nhân viên' ? 'selected' : ''}>Nhân viên</option>
                         </select>
-                        
                         <label class="block text-sm font-bold mb-1">Ngày sinh (dd/mm/yyyy):</label>
                         <input type="date" id="editDob" class="w-full border p-2 rounded mb-3" value="${emp.dob || ''}">
-                        
                         <label class="block text-sm font-bold mb-1">Quê quán:</label>
                         <input type="text" id="editHometown" class="w-full border p-2 rounded mb-3" value="${emp.hometown || ''}">
-                        
                         <label class="block text-sm font-bold mb-1">Ngày vào công ty:</label>
                         <input type="date" id="editJoinDate" class="w-full border p-2 rounded mb-3" value="${emp.join_date || ''}">
                     </div>
                 `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Lưu',
-                cancelButtonText: 'Hủy',
+                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Lưu', cancelButtonText: 'Hủy',
                 preConfirm: () => {
                     const name = document.getElementById('editName').value.trim();
-                    if (!name) {
-                        Swal.showValidationMessage('Vui lòng nhập tên nhân viên');
-                        return false;
-                    }
-                    return {
-                        name,
-                        role: document.getElementById('editRole').value,
-                        dob: document.getElementById('editDob').value || null,
-                        hometown: document.getElementById('editHometown').value,
-                        join_date: document.getElementById('editJoinDate').value || null
-                    };
+                    if (!name) { Swal.showValidationMessage('Vui lòng nhập tên nhân viên'); return false; }
+                    return { name, role: document.getElementById('editRole').value, dob: document.getElementById('editDob').value || null, hometown: document.getElementById('editHometown').value, join_date: document.getElementById('editJoinDate').value || null };
                 }
             });
-
-            if (formValues) {
-                await saveEmployeeChanges(empId, formValues);
-            }
+            if (formValues) await saveEmployeeChanges(empId, formValues);
         }
 
         async function saveEmployeeChanges(empId, updates) {
             try {
                 Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
                 const res = await fetch(`${API_URL}/employees/${empId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updates)
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates)
                 });
-
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => null);
-                    throw new Error(errorData?.error || 'Không cập nhật được hồ sơ');
-                }
-
+                if (!res.ok) throw new Error('Không cập nhật được hồ sơ');
                 Swal.fire('Thành công', 'Hồ sơ nhân viên đã được cập nhật', 'success');
-                loadEmployeesTable();
-                loadEmployeesForSelect();
-                renderOrgChart();
-            } catch (error) {
-                Swal.fire('Lỗi', error.message, 'error');
-            }
+                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
+            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
         }
 
         function renderTeamList() {
             const container = document.getElementById('teamList');
             container.innerHTML = '';
-            
-            const teamNames = [...new Set(allEmployees
-                .filter(e => e.team_name)
-                .map(e => e.team_name))];
-            
+            const teamNames = [...new Set(allEmployees.filter(e => e.team_name).map(e => e.team_name))];
             if (teamNames.length === 0) {
-                container.innerHTML = '<div class="text-gray-500 italic">Chưa có tổ nào</div>';
-                return;
+                container.innerHTML = '<div class="text-gray-500 italic">Chưa có tổ nào</div>'; return;
             }
-            
             teamNames.forEach(teamName => {
                 const teamLead = allEmployees.find(e => e.team_name === teamName && e.role === 'Tổ trưởng');
                 const teamPlaceholder = allEmployees.find(e => e.team_name === teamName && e.role === 'Tổ');
                 const teamMembers = allEmployees.filter(e => e.team_name === teamName && e.role === 'Nhân viên');
-                
                 const teamDiv = document.createElement('div');
                 teamDiv.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded border shadow-sm gap-3';
-                
                 const info = document.createElement('div');
-                info.innerHTML = `
-                    <div class="font-bold text-blue-800">${teamName}</div>
-                    <div class="text-sm text-gray-600">Tổ trưởng: <span class="font-semibold">${teamLead ? teamLead.name : 'Chưa có tổ trưởng'}</span></div>
-                    <div class="text-sm text-gray-500">Số nhân viên: ${teamMembers.length}</div>
-                `;
-                
+                info.innerHTML = `<div class="font-bold text-blue-800">${teamName}</div><div class="text-sm text-gray-600">Tổ trưởng: <span class="font-semibold">${teamLead ? teamLead.name : 'Chưa có tổ trưởng'}</span></div><div class="text-sm text-gray-500">Số nhân viên: ${teamMembers.length}</div>`;
                 teamDiv.appendChild(info);
-
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600';
                 deleteBtn.textContent = '🗑️ Xóa Tổ';
-                if (teamPlaceholder) {
-                    deleteBtn.onclick = () => deleteTeam(teamPlaceholder.id);
-                } else {
-                    deleteBtn.onclick = () => deleteTeamByName(teamName);
-                }
+                deleteBtn.onclick = () => teamPlaceholder ? deleteTeam(teamPlaceholder.id) : deleteTeamByName(teamName);
                 teamDiv.appendChild(deleteBtn);
-
                 container.appendChild(teamDiv);
             });
         }
@@ -1181,15 +1065,12 @@
             const managers = allEmployees.filter(e => e.role === 'Quản lý');
             const teamLeads = allEmployees.filter(e => e.role === 'Tổ trưởng');
             const teamNames = [...new Set(teamLeads.map(e => e.team_name).filter(Boolean))];
-
             const hierarchy = document.createElement('div');
             hierarchy.className = 'org-hierarchy';
 
-            // CẤP 1: Quản lý
             if (managers.length > 0) {
                 const managerSectionWrapper = document.createElement('div');
                 managerSectionWrapper.className = 'w-full';
-
                 const managerSection = document.createElement('div');
                 managerSection.className = 'mb-2 p-4 border-2 border-purple-300 rounded-lg bg-purple-50 text-center';
                 const title = document.createElement('div');
@@ -1199,7 +1080,6 @@
 
                 const cardRow = document.createElement('div');
                 cardRow.className = 'flex flex-wrap justify-center gap-4';
-
                 managers.forEach(manager => {
                     const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(manager.name)}&background=random`;
                     const avatar = manager.avatar_url || defaultAvatar;
@@ -1208,17 +1088,14 @@
                     cardDiv.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${manager.name}</div><div class="text-xs text-purple-600 font-semibold mt-1">${manager.role}</div>`;
                     cardRow.appendChild(cardDiv);
                 });
-
                 managerSection.appendChild(cardRow);
                 managerSectionWrapper.appendChild(managerSection);
                 hierarchy.appendChild(managerSectionWrapper);
-
                 const connector = document.createElement('div');
                 connector.className = 'org-connector-vertical';
                 hierarchy.appendChild(connector);
             }
 
-            // CẤP 2 & 3: Tổ trưởng & Nhân viên
             if (teamNames.length > 0) {
                 const levelHeader = document.createElement('div');
                 levelHeader.className = 'w-full text-center font-bold text-lg text-blue-800 mb-4';
@@ -1231,7 +1108,6 @@
                 teamNames.forEach(teamName => {
                     const teamBox = document.createElement('div');
                     teamBox.className = 'team-box';
-
                     const teamHeader = document.createElement('div');
                     teamHeader.className = 'team-header';
                     teamHeader.innerText = `📍 ${teamName}`;
@@ -1241,7 +1117,6 @@
                     if (lead) {
                         const leadCardWrapper = document.createElement('div');
                         leadCardWrapper.className = 'team-lead-card cursor-pointer hover:shadow-md hover:bg-blue-100 transition-all';
-                        leadCardWrapper.style.cursor = 'pointer';
                         const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name)}&background=random`;
                         const avatar = lead.avatar_url || defaultAvatar;
                         leadCardWrapper.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800 text-sm">${lead.name}</div><div class="text-xs text-blue-600 font-semibold">${lead.role}</div>`;
@@ -1264,7 +1139,6 @@
                             const avatar = member.avatar_url || defaultAvatar;
                             const memberCard = document.createElement('div');
                             memberCard.className = 'team-member-card cursor-pointer hover:shadow-md hover:bg-blue-50 transition-all';
-                            memberCard.style.cursor = 'pointer';
                             memberCard.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${member.name}</div><div class="text-xs text-gray-600">Nhân viên</div>`;
                             memberCard.onclick = () => showEmployeeDetails(JSON.stringify(member));
                             membersContainer.appendChild(memberCard);
@@ -1275,15 +1149,12 @@
                         emptyMember.innerText = 'Chưa có nhân viên';
                         membersContainer.appendChild(emptyMember);
                     }
-
                     teamBox.appendChild(membersContainer);
                     teamsLevel.appendChild(teamBox);
                 });
-
                 hierarchy.appendChild(teamsLevel);
             }
 
-            // Nhân viên chưa gán tổ
             const unassignedEmployees = allEmployees.filter(e => e.role === 'Nhân viên' && !e.team_name);
             if (unassignedEmployees.length > 0) {
                 const unassignedSection = document.createElement('div');
@@ -1300,7 +1171,6 @@
                     const avatar = member.avatar_url || defaultAvatar;
                     const cardDiv = document.createElement('div');
                     cardDiv.className = 'team-member-card opacity-50 cursor-pointer hover:opacity-75 transition-all';
-                    cardDiv.style.cursor = 'pointer';
                     cardDiv.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${member.name}</div><div class="text-xs text-gray-600">Chưa gán tổ</div>`;
                     cardDiv.onclick = () => showEmployeeDetails(JSON.stringify(member));
                     memberDiv.appendChild(cardDiv);
@@ -1308,7 +1178,6 @@
                 unassignedSection.appendChild(memberDiv);
                 hierarchy.appendChild(unassignedSection);
             }
-
             container.appendChild(hierarchy);
         }
 

@@ -13,9 +13,6 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANO
 // ==========================================
 // API NHÂN VIÊN
 // ==========================================
-// ==========================================
-// API NHÂN VIÊN (ĐÃ CẬP NHẬT)
-// ==========================================
 app.get('/api/employees', async (req, res) => {
     const { data, error } = await supabase.from('employees').select('*').order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
@@ -55,10 +52,26 @@ app.patch('/api/employees/:id', async (req, res) => {
     res.json(data[0]);
 });
 
+app.delete('/api/employees/:id', async (req, res) => {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Thiếu ID nhân viên' });
+
+    const parsedId = !Number.isNaN(Number(id)) ? Number(id) : id;
+
+    const { error: logError } = await supabase.from('productivity_logs').delete().eq('employee_id', parsedId);
+    if (logError) return res.status(500).json({ error: logError.message });
+
+    const { data, error } = await supabase.from('employees').delete().eq('id', parsedId);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data || data.length === 0) return res.status(404).json({ error: 'Nhân viên không tồn tại' });
+
+    res.json({ message: 'Nhân viên đã được xóa' });
+});
+
+
 // ==========================================
-// API SẢN LƯỢNG
+// API SẢN LƯỢNG & LỊCH SỬ
 // ==========================================
-// API LƯU LỊCH SỬ LÀM VIỆC (Đã thêm Tên ca và Mã vận đơn)
 app.post('/api/logs', async (req, res) => {
     const { employee_id, work_date, start_time, end_time, total_orders, total_time_seconds, average_time_per_order, session_name, order_codes } = req.body;
     
@@ -75,21 +88,36 @@ app.post('/api/logs', async (req, res) => {
     res.json({ message: 'Đã lưu thành công', data });
 });
 
+app.get('/api/history', async (req, res) => {
+    const { employee_id, date } = req.query;
+    if (!employee_id) return res.status(400).json({ error: 'Thiếu ID nhân viên' });
+
+    let query = supabase
+        .from('productivity_logs')
+        .select('*')
+        .eq('employee_id', employee_id);
+    
+    if (date) {
+        query = query.eq('work_date', date);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+
 // ==========================================
 // API DASHBOARD (Thống kê)
 // ==========================================
 app.get('/api/stats/employees', async (req, res) => {
-    const { date } = req.query; // Lọc theo ngày
-    
-    let query = supabase.from('productivity_logs')
-        .select(`total_orders, employees(name)`);
-    
+    const { date } = req.query; 
+    let query = supabase.from('productivity_logs').select(`total_orders, employees(name)`);
     if (date) query = query.eq('work_date', date);
 
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
-    // Gom nhóm tổng đơn theo nhân viên
     const stats = {};
     data.forEach(log => {
         const empName = log.employees.name;
@@ -105,21 +133,7 @@ app.get('/api/stats/daily', async (req, res) => {
     res.json(data);
 });
 
-app.delete('/api/employees/:id', async (req, res) => {
-    const { id } = req.params;
-    if (!id) return res.status(400).json({ error: 'Thiếu ID nhân viên' });
 
-    const parsedId = !Number.isNaN(Number(id)) ? Number(id) : id;
-
-    const { error: logError } = await supabase.from('productivity_logs').delete().eq('employee_id', parsedId);
-    if (logError) return res.status(500).json({ error: logError.message });
-
-    const { data, error } = await supabase.from('employees').delete().eq('id', parsedId);
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data || data.length === 0) return res.status(404).json({ error: 'Nhân viên không tồn tại' });
-
-    res.json({ message: 'Nhân viên đã được xóa' });
-});
 // ==========================================
 // API TÌM KIẾM MÃ VẬN ĐƠN
 // ==========================================
@@ -127,7 +141,6 @@ app.get('/api/search', async (req, res) => {
     const { code } = req.query;
     if (!code) return res.status(400).json({ error: 'Thiếu mã vận đơn' });
 
-    // Tìm kiếm trong cột order_codes xem có chứa mã này không
     const { data, error } = await supabase
         .from('productivity_logs')
         .select('*, employees(name, role, team_name)')
@@ -137,28 +150,30 @@ app.get('/api/search', async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
+
+
+// ==========================================
+// API ĐỒNG BỘ TRẠNG THÁI (CHẤM XANH) GIỮA CÁC MÁY
+// ==========================================
+let globalActiveSessions = {}; 
+
+app.get('/api/active-sessions', (req, res) => {
+    res.json(globalActiveSessions);
+});
+
+app.post('/api/active-sessions', (req, res) => {
+    const { employeeId, action, sessionData } = req.body;
+    if (action === 'start') {
+        globalActiveSessions[employeeId] = sessionData; 
+    } else if (action === 'end') {
+        delete globalActiveSessions[employeeId]; 
+    }
+    res.json({ success: true, activeSessions: globalActiveSessions });
+});
+
+
+// ==========================================
+// CHỐT SỔ (LUÔN PHẢI NẰM DƯỚI CÙNG)
+// ==========================================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-// ==========================================
-// API LỊCH SỬ LÀM VIỆC (Dán thêm đoạn này)
-// ==========================================
-app.get('/api/history', async (req, res) => {
-    const { employee_id, date } = req.query;
-    
-    if (!employee_id) return res.status(400).json({ error: 'Thiếu ID nhân viên' });
-
-    let query = supabase
-        .from('productivity_logs')
-        .select('*')
-        .eq('employee_id', employee_id);
-    
-    // Nếu có chọn ngày trên giao diện thì lọc theo ngày đó
-    if (date) {
-        query = query.eq('work_date', date);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-    
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
