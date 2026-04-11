@@ -217,7 +217,7 @@
         // ==========================================
         // CẤU HÌNH HỆ THỐNG
         // ==========================================
-        const API_URL = 'https://backend-kho.onrender.com/api'; 
+        const API_URL = 'https://backend-kho.onrender.com/api';
         
         // ⚠️ DÁN URL VÀ KEY SUPABASE CỦA BẠN VÀO 2 DÒNG DƯỚI ĐÂY ⚠️
         const SUPABASE_URL_FRONTEND = 'https://ssvniazffehszaazxcdz.supabase.co';
@@ -242,15 +242,14 @@
                         }
                     }
                 } catch (e) {
-                    console.error("Lỗi đọc Storage", e);
                     activeSessions = {};
                 }
             }
         }
-        loadSessionsFromStorage(); // Gọi ngay khi tải trang
+        loadSessionsFromStorage(); 
 
         // ==========================================
-        // ĐỒNG BỘ TRẠNG THÁI "ĐANG LÀM" VỚI SERVER (MỖI 5 GIÂY)
+        // ĐỒNG BỘ LIVE TRACKING VỚI SERVER (Cứ 2 Giây 1 Lần)
         // ==========================================
         setInterval(async () => {
             try {
@@ -258,27 +257,41 @@
                 if (res.ok) {
                     const serverSessions = await res.json();
                     let needsRender = false;
+                    let needsHandleChange = false;
+
                     for (let emp of allEmployees) {
                         const srv = serverSessions[emp.id];
                         const loc = activeSessions[emp.id];
-                        // Nếu server báo có người làm, mà máy mình chưa có => Đánh dấu là Remote
+                        
                         if (srv && !loc) {
-                            activeSessions[emp.id] = { isRemote: true, sessionName: srv.sessionName };
+                            // Phát hiện máy khác bắt đầu làm
+                            activeSessions[emp.id] = { 
+                                isRemote: true, 
+                                sessionName: srv.sessionName, 
+                                startTime: new Date(srv.startTime), // Lấy đúng giờ bắt đầu của họ
+                                orderCount: srv.orderCount || 0
+                            };
                             needsRender = true;
                         } 
-                        // Nếu server báo đã nghỉ, mà máy mình vẫn hiện Remote => Xóa đi
+                        else if (srv && loc && loc.isRemote) {
+                            // Cập nhật số đơn nếu máy khác gõ thêm mã mới
+                            if (loc.orderCount !== srv.orderCount) {
+                                loc.orderCount = srv.orderCount;
+                                needsHandleChange = true; 
+                            }
+                        }
                         else if (!srv && loc && loc.isRemote) {
+                            // Máy khác đã kết thúc
                             delete activeSessions[emp.id];
                             needsRender = true;
+                            needsHandleChange = true;
                         }
                     }
-                    if (needsRender) {
-                        renderEmployeeListInInput();
-                        if (currentEmpId) handleEmployeeChange(); // Cập nhật ngay UI nếu đang xem người đó
-                    }
+                    if (needsRender) renderEmployeeListInInput();
+                    if ((needsRender || needsHandleChange) && currentEmpId) handleEmployeeChange(); 
                 }
-            } catch (e) { /* Bỏ qua nếu lỗi mạng */ }
-        }, 5000);
+            } catch (e) { /* Bỏ qua nếu mạng chập chờn */ }
+        }, 2000); // 🚀 TĂNG TỐC ĐỘ LÊN 2 GIÂY
 
         // ==========================================
         // CHUYỂN TAB CƠ BẢN
@@ -348,64 +361,72 @@
             if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
             const codes = activeSessions[currentEmpId].codes.split('\n').map(c => c.trim()).filter(c => c !== '');
             const uniqueCodes = [...new Set(codes)];
-            document.getElementById('liveCounter').innerText = `${uniqueCodes.length} đơn`;
+            const newCount = uniqueCodes.length;
             
-            // Cập nhật LocalStorage mỗi khi gõ mã mới
+            document.getElementById('liveCounter').innerText = `${newCount} đơn`;
+            
+            // Cập nhật LocalStorage
             localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
+
+            // 🚀 Báo cho Server biết số đơn mới để máy khác cập nhật ngay lập tức
+            fetch(`${API_URL}/active-sessions`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: currentEmpId, action: 'update', sessionData: { orderCount: newCount } })
+            }).catch(()=>{});
         }
 
         function handleEmployeeChange() {
-            currentEmpId = document.getElementById('empSelect').value;
-            const sessionNameInput = document.getElementById('sessionNameInput');
+    currentEmpId = document.getElementById('empSelect').value;
+    const sessionNameInput = document.getElementById('sessionNameInput');
+    const textArea = document.getElementById('orderCodes');
+    const liveCounter = document.getElementById('liveCounter');
 
-            if (!currentEmpId) {
-                resetSessionUI(true);
-                renderEmployeeListInInput();
-                return;
-            }
+    if (!currentEmpId) {
+        resetSessionUI(true);
+        renderEmployeeListInInput();
+        return;
+    }
 
-            const session = activeSessions[currentEmpId];
-            if (session) {
-                if (session.isRemote) {
-                    // Máy khác đang thao tác
-                    document.getElementById('btnStart').disabled = true;
-                    document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
-                    document.getElementById('btnEnd').disabled = true;
-                    document.getElementById('btnEnd').classList.add('opacity-50', 'cursor-not-allowed');
+    const session = activeSessions[currentEmpId];
+    if (session) {
+        // Cập nhật tên ca và khóa input tên ca
+        sessionNameInput.value = session.sessionName || '';
+        sessionNameInput.disabled = true;
 
-                    const textArea = document.getElementById('orderCodes');
-                    textArea.disabled = true;
-                    textArea.value = "Người khác đang thao tác ca này trên máy của họ...";
-                    textArea.classList.add('bg-gray-100');
-                    textArea.classList.remove('bg-white', 'border-blue-500', 'ring-2');
+        if (session.isRemote) {
+            // --- TRƯỜNG HỢP MÁY KHÁC ĐANG LÀM ---
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnEnd').disabled = true;
 
-                    sessionNameInput.value = session.sessionName || 'Đang làm việc...';
-                    sessionNameInput.disabled = true;
-                    document.getElementById('liveCounter').innerText = "---";
-                } else {
-                    // Mình đang thao tác
-                    document.getElementById('btnStart').disabled = true;
-                    document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
-                    document.getElementById('btnEnd').disabled = false;
-                    document.getElementById('btnEnd').classList.remove('opacity-50', 'cursor-not-allowed');
+            textArea.disabled = true;
+            textArea.value = `📢 CA LÀM: ${session.sessionName || '---'}\n\n🔒 NHÂN VIÊN ĐANG THAO TÁC TRÊN THIẾT BỊ KHÁC...\n(Số đơn và thời gian sẽ cập nhật tự động bên dưới)`;
+            textArea.className = "w-full border-2 p-3 rounded bg-blue-50 text-blue-800 font-bold text-center pt-10 focus:outline-none";
+            
+            // Ép hiển thị số đơn từ máy chủ (srvData)
+            liveCounter.innerText = `${session.orderCount || 0} đơn`;
+            liveCounter.className = "absolute bottom-4 right-4 bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold shadow-lg border border-white animate-pulse";
+        } else {
+            // --- TRƯỜNG HỢP CHÍNH MÁY NÀY ĐANG LÀM ---
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnEnd').disabled = false;
+            document.getElementById('btnEnd').classList.remove('opacity-50', 'cursor-not-allowed');
 
-                    const textArea = document.getElementById('orderCodes');
-                    textArea.disabled = false;
-                    textArea.value = session.codes || '';
-                    textArea.classList.add('bg-white', 'border-blue-500', 'ring-2');
-                    textArea.classList.remove('bg-gray-100');
-                    textArea.placeholder = "Đang trong phiên làm việc. Dán mã vận đơn vào đây...";
-
-                    sessionNameInput.value = session.sessionName || '';
-                    sessionNameInput.disabled = true;
-                    updateCounter();
-                }
-                updateStatusBlinker();
-            } else {
-                resetSessionUI(false);
-            }
-            renderEmployeeListInInput();
+            textArea.disabled = false;
+            textArea.value = session.codes || '';
+            textArea.className = "w-full border-2 p-3 rounded bg-white text-gray-800 border-blue-500 ring-2 focus:outline-none";
+            
+            // Tính toán số đơn từ text đang gõ
+            const codes = (session.codes || '').split('\n').map(c => c.trim()).filter(c => c !== '');
+            const uniqueCount = [...new Set(codes)].length;
+            liveCounter.innerText = `${uniqueCount} đơn`;
+            liveCounter.className = "absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-4 py-1.5 rounded-full font-bold shadow-lg border border-gray-600";
         }
+        updateStatusBlinker();
+    } else {
+        resetSessionUI(false);
+    }
+    renderEmployeeListInInput();
+}
 
         function resetSessionUI(disableAll = false) {
             document.getElementById('btnStart').disabled = disableAll;
@@ -441,33 +462,43 @@
                 return Swal.fire('Cảnh báo', 'Bạn PHẢI NHẬP TÊN CA LÀM trước khi bấm Bắt Đầu!', 'warning');
             }
 
-            // Nếu máy khác đang làm thì chặn
             if (activeSessions[currentEmpId] && activeSessions[currentEmpId].isRemote) return;
 
             activeSessions[currentEmpId] = { startTime: new Date(), codes: '', sessionName: sessionName };
-            
-            // LƯU VÀO TRÌNH DUYỆT (CHỐNG F5)
             localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
             handleEmployeeChange();
 
-            // BÁO CÁO LÊN SERVER ĐỂ MÁY KHÁC THẤY CHẤM XANH
+            // Gửi Server Tên ca + Giờ bắt đầu + Mức 0 đơn
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employeeId: currentEmpId, action: 'start', sessionData: { sessionName: sessionName } })
+                body: JSON.stringify({ 
+                    employeeId: currentEmpId, 
+                    action: 'start', 
+                    sessionData: { 
+                        sessionName: sessionName, 
+                        startTime: activeSessions[currentEmpId].startTime,
+                        orderCount: 0 
+                    } 
+                })
             }).catch(()=>{});
         }
 
-        // Đồng hồ đếm giờ an toàn
-        setInterval(() => {
-            if (currentEmpId && activeSessions[currentEmpId] && !activeSessions[currentEmpId].isRemote) {
-                const st = new Date(activeSessions[currentEmpId].startTime);
-                const now = new Date();
-                const diff = Math.floor((now - st) / 1000);
-                const m = Math.floor(diff / 60);
-                const s = diff % 60;
-                document.getElementById('sessionTimer').innerText = `🕒 Thời gian: ${m}p ${s}s`;
-            }
-        }, 1000);
+        // Đồng hồ đếm giờ hiển thị cho cả 2 máy
+        // Đồng hồ đếm giờ hiển thị cho cả máy đang làm và máy đang xem live
+setInterval(() => {
+    if (currentEmpId && activeSessions[currentEmpId]) {
+        const session = activeSessions[currentEmpId];
+        let st = session.startTime ? new Date(session.startTime) : null;
+        
+        if (st && !isNaN(st.getTime())) {
+            const now = new Date();
+            const diff = Math.floor((now - st) / 1000);
+            const m = Math.floor(diff / 60);
+            const s = diff % 60;
+            document.getElementById('sessionTimer').innerText = `🕒 Thời gian: ${m}p ${s}s (Bắt đầu lúc: ${st.toLocaleTimeString('vi-VN', {hour12:false})})`;
+        }
+    }
+}, 1000);
 
         async function endSessionAndSave() {
             if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
@@ -480,7 +511,6 @@
             if (total_orders === 0) return Swal.fire('Lỗi', 'Chưa có mã vận đơn nào được nhập!', 'error');
 
             const orderCodesString = uniqueCodes.join(', ');
-
             const sessionStartTime = new Date(session.startTime);
             const sessionEndTime = new Date();
             const work_date = sessionStartTime.toISOString().split('T')[0];
@@ -523,18 +553,15 @@
                     icon: 'success'
                 });
 
-                // BÁO CHO SERVER XÓA CHẤM XANH
                 fetch(`${API_URL}/active-sessions`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ employeeId: currentEmpId, action: 'end' })
                 }).catch(()=>{});
 
-                // XÓA KHỎI BỘ NHỚ LƯU TẠM
                 delete activeSessions[currentEmpId];
                 localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                 handleEmployeeChange();
             } catch (e) {
-                // Fallback Supabase
                 const safeData = { ...logData };
                 delete safeData.average_time_per_order;
                 safeData.session_name = session.sessionName;
@@ -546,7 +573,6 @@
                     
                     Swal.fire('Thành công', 'Đã lưu qua Supabase', 'success');
 
-                    // BÁO CHO SERVER XÓA CHẤM XANH
                     fetch(`${API_URL}/active-sessions`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ employeeId: currentEmpId, action: 'end' })
