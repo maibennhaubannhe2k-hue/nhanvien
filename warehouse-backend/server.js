@@ -104,14 +104,17 @@ app.get('/api/history', async (req, res) => {
 });
 
 // ==========================================
-// MODULE 3: THỐNG KÊ (DASHBOARD)
+// MODULE 3: THỐNG KÊ (DASHBOARD - NÂNG CẤP LỌC TỪ NGÀY ĐẾN NGÀY)
 // ==========================================
 
-// Thống kê sản lượng nhân viên theo ngày
+// Thống kê sản lượng nhân viên theo khoảng ngày
 app.get('/api/stats/employees', async (req, res) => {
-    const { date } = req.query; 
+    const { startDate, endDate } = req.query; 
     let query = supabase.from('productivity_logs').select(`total_orders, employees(name)`);
-    if (date) query = query.eq('work_date', date);
+    
+    // Lọc theo khoảng ngày nếu có
+    if (startDate) query = query.gte('work_date', startDate);
+    if (endDate) query = query.lte('work_date', endDate);
 
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
@@ -126,10 +129,28 @@ app.get('/api/stats/employees', async (req, res) => {
     res.json(Object.keys(stats).map(name => ({ name, total: stats[name] })));
 });
 
-// Thống kê tổng kho theo ngày
+// Thống kê tổng kho theo khoảng ngày
 app.get('/api/stats/daily', async (req, res) => {
-    // Lưu ý: bảng daily_productivity thường là một View hoặc bảng tổng hợp trong Supabase
-    const { data, error } = await supabase.from('daily_productivity').select('*');
+    const { startDate, endDate } = req.query;
+    let query = supabase.from('daily_productivity').select('*');
+    
+    if (startDate) query = query.gte('work_date', startDate);
+    if (endDate) query = query.lte('work_date', endDate);
+
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// API MỚI: Lấy dữ liệu để vẽ Bảng Xếp Hạng Tốc Độ Theo Ca
+app.get('/api/stats/sessions', async (req, res) => {
+    const { startDate, endDate } = req.query;
+    let query = supabase.from('productivity_logs').select(`session_name, total_orders, total_time_seconds, employees(name)`);
+    
+    if (startDate) query = query.gte('work_date', startDate);
+    if (endDate) query = query.lte('work_date', endDate);
+    
+    const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
@@ -152,17 +173,16 @@ app.get('/api/search', async (req, res) => {
 });
 
 // ==========================================
-// ==========================================
-// MODULE 5: ĐỒNG BỘ TRẠNG THÁI "ĐANG LÀM" (REAL-TIME)
+// MODULE 5: ĐỒNG BỘ TRẠNG THÁI "ĐANG LÀM" (REAL-TIME NÂNG CẤP)
 // ==========================================
 let globalActiveSessions = {}; 
 
-// Lấy danh sách ai đang làm (để máy khác hiện chấm xanh)
+// Lấy danh sách ai đang làm (để máy khác hiện chấm xanh/vàng)
 app.get('/api/active-sessions', (req, res) => {
     res.json(globalActiveSessions);
 });
 
-// Cập nhật trạng thái khi có máy Bắt đầu/Gõ đơn/Kết thúc
+// Cập nhật trạng thái khi có máy Bắt đầu/Gõ đơn/Kết thúc/Tạm dừng
 app.post('/api/active-sessions', (req, res) => {
     const { employeeId, action, sessionData } = req.body;
     
@@ -170,13 +190,11 @@ app.post('/api/active-sessions', (req, res) => {
         // Khởi tạo phiên làm việc trên server
         globalActiveSessions[employeeId] = sessionData; 
     } else if (action === 'update' && globalActiveSessions[employeeId]) {
-        // Cập nhật số đơn nhảy trực tiếp
-        globalActiveSessions[employeeId].orderCount = sessionData.orderCount;
-        
-        // VÁ LỖI ĐỒNG HỒ: Đảm bảo startTime không bao giờ bị đè mất khi update số đơn
-        if (sessionData.startTime) {
-             globalActiveSessions[employeeId].startTime = sessionData.startTime;
-        }
+        // Cập nhật các thông số từ máy đang làm (Số đơn, Tạm dừng, Thời gian)
+        if (sessionData.orderCount !== undefined) globalActiveSessions[employeeId].orderCount = sessionData.orderCount;
+        if (sessionData.startTime !== undefined) globalActiveSessions[employeeId].startTime = sessionData.startTime;
+        if (sessionData.isPaused !== undefined) globalActiveSessions[employeeId].isPaused = sessionData.isPaused;
+        if (sessionData.accumulatedTime !== undefined) globalActiveSessions[employeeId].accumulatedTime = sessionData.accumulatedTime;
     } else if (action === 'end') {
         // Xóa phiên làm việc khi kết thúc
         delete globalActiveSessions[employeeId]; 

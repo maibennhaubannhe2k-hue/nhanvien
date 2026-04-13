@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACBT</title>
+    <title>Quản Lý Kho Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -23,30 +23,21 @@
         .org-level-2 { display: flex; justify-content: center; gap: 20px; width: 100%; flex-wrap: wrap; }
         .team-box { border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; background: #eff6ff; min-width: 250px; }
         .team-header { text-align: center; font-weight: bold; font-size: 1.125rem; color: #1e40af; margin-bottom: 1rem; }
-        .team-lead-card { background: white; border: 2px solid #1e40af; border-radius: 8px; padding: 12px; text-align: center; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .team-lead-card { background: white; border: 2px solid #1e40af; border-radius: 8px; padding: 12px; text-align: center; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
         .team-lead-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin: 0 auto 8px; }
         .team-members-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-        .team-member-card { background: white; border: 1px solid #93c5fd; border-radius: 6px; padding: 10px; width: 130px; text-align: center; font-size: 0.875rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .team-member-card { background: white; border: 1px solid #93c5fd; border-radius: 6px; padding: 10px; width: 130px; text-align: center; font-size: 0.875rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer;}
         .team-member-card img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin: 0 auto 6px; }
         .status-pulse {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background-color: #10b981;
-            border-radius: 50%;
-            margin-right: 5px;
+            display: inline-block; width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; margin-right: 5px;
             animation: pulse-animation 1.5s infinite;
         }
+        .status-paused { display: inline-block; width: 10px; height: 10px; background-color: #eab308; border-radius: 50%; margin-right: 5px; }
 
         @keyframes pulse-animation {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .bg-working {
-            color: #059669 !important;
-            font-weight: 800 !important;
         }
     </style>
 </head>
@@ -87,9 +78,10 @@
                         <div id="sessionStatus" class="text-xl font-black text-gray-800 mt-1 flex items-center justify-center">Chưa bắt đầu</div>
                         <div id="sessionTimer" class="text-sm text-gray-500 mt-1 font-medium"></div>
                     </div>
-                    <div class="flex gap-2 lg:col-span-1 justify-end items-center">
-                        <button id="btnStart" onclick="startSession()" class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 shadow-md transition-colors">▶ Bắt Đầu</button>
-                        <button id="btnEnd" onclick="endSessionAndSave()" class="bg-red-600 text-white px-6 py-2 rounded font-bold shadow-md opacity-50 cursor-not-allowed transition-colors" disabled>🛑 Kết Thúc & Lưu</button>
+                    <div class="flex gap-2 lg:col-span-1 justify-end items-center flex-wrap">
+                        <button id="btnStart" onclick="startSession()" class="bg-green-600 text-white px-5 py-2 rounded font-bold hover:bg-green-700 shadow-md transition-colors">▶ Bắt Đầu</button>
+                        <button id="btnPause" onclick="togglePause()" class="hidden bg-yellow-500 text-white px-5 py-2 rounded font-bold hover:bg-yellow-600 shadow-md transition-colors">⏸ Tạm Dừng</button>
+                        <button id="btnEnd" onclick="endSessionAndSave()" class="bg-red-600 text-white px-5 py-2 rounded font-bold shadow-md opacity-50 cursor-not-allowed transition-colors" disabled>🛑 Kết Thúc & Lưu</button>
                     </div>
                 </div>
             </div>
@@ -97,7 +89,7 @@
             <div class="bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                     <div class="font-bold text-gray-700">Danh sách nhân viên</div>
-                    <div class="text-xs text-gray-500">Nhân viên đang làm sẽ hiển thị chấm xanh</div>
+                    <div class="text-xs text-gray-500">Nhân viên đang làm sẽ hiển thị chấm xanh / vàng</div>
                 </div>
                 <div id="employeeList" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"></div>
             </div>
@@ -165,22 +157,39 @@
         </div>
 
         <div id="dashboard" class="tab-content bg-white p-6 rounded shadow">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-blue-800">Thống Kê Sản Lượng</h2>
-                <div class="flex items-center gap-2 bg-gray-100 p-2 rounded border">
-                    <label class="font-bold text-sm text-gray-700">Lọc ngày:</label>
-                    <input type="date" id="filterDate" onchange="loadDashboards()" class="border-none rounded font-bold text-blue-700 bg-transparent">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-2xl font-bold text-blue-800">📊 Thống Kê Sản Lượng</h2>
+                <div class="flex items-center gap-3 bg-gray-100 p-2.5 rounded-lg border shadow-inner">
+                    <label class="font-bold text-sm text-gray-700">Từ:</label>
+                    <input type="date" id="filterStartDate" onchange="loadDashboards()" class="border p-1.5 rounded font-bold text-blue-700 bg-white shadow-sm outline-none">
+                    <label class="font-bold text-sm text-gray-700">Đến:</label>
+                    <input type="date" id="filterEndDate" onchange="loadDashboards()" class="border p-1.5 rounded font-bold text-blue-700 bg-white shadow-sm outline-none">
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-8">
-                <div class="bg-gray-50 p-4 rounded border"><canvas id="empChart"></canvas></div>
-                <div class="bg-gray-50 p-4 rounded border"><canvas id="dailyChart"></canvas></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-gray-50 p-4 rounded-xl border shadow-sm"><canvas id="empChart"></canvas></div>
+                <div class="bg-gray-50 p-4 rounded-xl border shadow-sm"><canvas id="dailyChart"></canvas></div>
+            </div>
+            
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div>
+                        <h3 class="text-xl font-black text-blue-900">🏆 Bảng Xếp Hạng Tốc Độ Theo Ca</h3>
+                        <p class="text-sm text-gray-600">Đánh giá ai đóng gói loại hàng này nhanh nhất</p>
+                    </div>
+                    <select id="sessionLeaderboardSelect" onchange="renderSessionLeaderboard()" class="border-2 border-blue-300 p-2 rounded-lg font-bold text-blue-800 bg-white outline-none shadow-sm min-w-[200px]">
+                        <option value="">-- Chọn tên ca làm --</option>
+                    </select>
+                </div>
+                <div id="sessionLeaderboardContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div class="col-span-full text-center text-gray-500 italic py-4">Vui lòng chọn khoảng thời gian và tên ca để xem bảng xếp hạng.</div>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="historyModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-5xl transform transition-all">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-6xl transform transition-all">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <h3 class="text-xl font-bold text-blue-800" id="historyModalTitle">Lịch sử làm việc</h3>
                 <button onclick="closeHistoryModal()" class="text-gray-500 hover:text-red-500 font-bold text-3xl">&times;</button>
@@ -209,7 +218,10 @@
                     <tbody id="historyTableBody"></tbody>
                 </table>
             </div>
-            <div class="mt-4 text-right font-black text-2xl text-green-600 border-t pt-3" id="historyTotalOrders">Tổng: 0 đơn</div>
+            <div class="mt-4 flex justify-between items-center border-t pt-3">
+                <div class="text-gray-500 font-medium italic">Thống kê dữ liệu trong ngày được chọn</div>
+                <div class="text-right text-xl" id="historyTotalOrders">Tổng: 0 đơn</div>
+            </div>
         </div>
     </div>
 
@@ -217,7 +229,7 @@
         // ==========================================
         // CẤU HÌNH HỆ THỐNG
         // ==========================================
-        const API_URL = 'https://backend-kho.onrender.com/api';
+        const API_URL = 'https://backend-kho.onrender.com/api'; 
         
         // ⚠️ DÁN URL VÀ KEY SUPABASE CỦA BẠN VÀO 2 DÒNG DƯỚI ĐÂY ⚠️
         const SUPABASE_URL_FRONTEND = 'https://ssvniazffehszaazxcdz.supabase.co';
@@ -225,11 +237,12 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL_FRONTEND, SUPABASE_ANON_KEY_FRONTEND);
 
         let allEmployees = [];
-        let activeSessions = {}; // Giỏ hàng độc lập
+        let activeSessions = {}; 
         let currentEmpId = null;
+        let globalSessionLogsForDashboard = [];
 
         // ==========================================
-        // KHÔI PHỤC DỮ LIỆU TỪ LOCAL STORAGE (CHỐNG F5)
+        // KHÔI PHỤC DỮ LIỆU TỪ LOCAL STORAGE
         // ==========================================
         function loadSessionsFromStorage() {
             const saved = localStorage.getItem('warehouse_active_sessions');
@@ -240,16 +253,18 @@
                         if (activeSessions[id].startTime) {
                             activeSessions[id].startTime = new Date(activeSessions[id].startTime);
                         }
+                        // FIX: Phục hồi Giờ Gốc (Original Start Time) để không bị đè giờ khi Tạm dừng
+                        if (activeSessions[id].originalStartTime) {
+                            activeSessions[id].originalStartTime = new Date(activeSessions[id].originalStartTime);
+                        }
                     }
-                } catch (e) {
-                    activeSessions = {};
-                }
+                } catch (e) { activeSessions = {}; }
             }
         }
         loadSessionsFromStorage(); 
 
         // ==========================================
-        // ĐỒNG BỘ LIVE TRACKING VỚI SERVER (Cứ 2 Giây 1 Lần)
+        // ĐỒNG BỘ LIVE TRACKING
         // ==========================================
         setInterval(async () => {
             try {
@@ -264,24 +279,27 @@
                         const loc = activeSessions[emp.id];
                         
                         if (srv && !loc) {
-                            // Phát hiện máy khác bắt đầu làm
                             activeSessions[emp.id] = { 
                                 isRemote: true, 
                                 sessionName: srv.sessionName, 
-                                startTime: new Date(srv.startTime), // Lấy đúng giờ bắt đầu của họ
-                                orderCount: srv.orderCount || 0
+                                startTime: srv.startTime ? new Date(srv.startTime) : null,
+                                orderCount: srv.orderCount || 0,
+                                isPaused: srv.isPaused || false,
+                                accumulatedTime: srv.accumulatedTime || 0
                             };
                             needsRender = true;
                         } 
                         else if (srv && loc && loc.isRemote) {
-                            // Cập nhật số đơn nếu máy khác gõ thêm mã mới
-                            if (loc.orderCount !== srv.orderCount) {
+                            if (loc.orderCount !== srv.orderCount || loc.isPaused !== srv.isPaused || loc.accumulatedTime !== srv.accumulatedTime) {
                                 loc.orderCount = srv.orderCount;
+                                loc.isPaused = srv.isPaused;
+                                loc.accumulatedTime = srv.accumulatedTime;
+                                if(srv.startTime) loc.startTime = new Date(srv.startTime);
                                 needsHandleChange = true; 
+                                needsRender = true;
                             }
                         }
                         else if (!srv && loc && loc.isRemote) {
-                            // Máy khác đã kết thúc
                             delete activeSessions[emp.id];
                             needsRender = true;
                             needsHandleChange = true;
@@ -290,8 +308,8 @@
                     if (needsRender) renderEmployeeListInInput();
                     if ((needsRender || needsHandleChange) && currentEmpId) handleEmployeeChange(); 
                 }
-            } catch (e) { /* Bỏ qua nếu mạng chập chờn */ }
-        }, 2000); // 🚀 TĂNG TỐC ĐỘ LÊN 2 GIÂY
+            } catch (e) {}
+        }, 2000); 
 
         // ==========================================
         // CHUYỂN TAB CƠ BẢN
@@ -305,16 +323,13 @@
             if(tabId === 'input') loadEmployeesForSelect();
         }
 
-        // ==========================================
-        // MODULE: TÌM KIẾM MÃ VẬN ĐƠN
-        // ==========================================
         async function searchOrderCode() {
             const code = document.getElementById('globalSearchInput').value.trim();
             if(!code) return Swal.fire('Chú ý', 'Vui lòng nhập mã vận đơn cần tìm', 'info');
             Swal.fire({ title: 'Đang tìm kiếm...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             try {
                 const res = await fetch(`${API_URL}/search?code=${code}`);
-                if(!res.ok) throw new Error("Lỗi API tìm kiếm");
+                if(!res.ok) throw new Error("Lỗi API");
                 const logs = await res.json();
                 if(logs.length === 0) {
                     Swal.fire('Không tìm thấy', `Mã <b>${code}</b> chưa được ai xử lý!`, 'info');
@@ -334,9 +349,6 @@
             } catch(e) { Swal.fire('Lỗi', 'Máy chủ tìm kiếm đang bận hoặc bị lỗi. Thử lại sau!', 'error'); }
         }
 
-        // ==========================================
-        // MODULE: XEM CHI TIẾT MÃ TRONG LỊCH SỬ
-        // ==========================================
         function showOrderCodesList(codesStr, sessionName) {
             if(!codesStr) return Swal.fire('Trống', 'Ca này không có mã vận đơn nào được lưu.', 'info');
             const codes = codesStr.split(', ');
@@ -348,10 +360,15 @@
 
 
         // ==========================================
-        // MODULE: ĐA NHIỆM BẤM GIỜ & LƯU SẢN LƯỢNG
+        // MODULE: ĐA NHIỆM BẤM GIỜ & TẠM DỪNG MỚI NÂNG CẤP
         // ==========================================
         document.getElementById('orderCodes').addEventListener('input', (e) => {
             if (currentEmpId && activeSessions[currentEmpId] && !activeSessions[currentEmpId].isRemote) {
+                if(activeSessions[currentEmpId].isPaused) {
+                    e.target.value = activeSessions[currentEmpId].codes;
+                    Swal.fire({title:'Nhắc nhở', text:'Ca làm đang Tạm Dừng. Hãy bấm Tiếp Tục để làm tiếp!', icon:'warning', timer:2000, showConfirmButton:false});
+                    return;
+                }
                 activeSessions[currentEmpId].codes = e.target.value;
                 updateCounter();
             }
@@ -364,75 +381,114 @@
             const newCount = uniqueCodes.length;
             
             document.getElementById('liveCounter').innerText = `${newCount} đơn`;
-            
-            // Cập nhật LocalStorage
+            activeSessions[currentEmpId].orderCount = newCount;
             localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
 
-            // 🚀 Báo cho Server biết số đơn mới để máy khác cập nhật ngay lập tức
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ employeeId: currentEmpId, action: 'update', sessionData: { orderCount: newCount } })
             }).catch(()=>{});
         }
 
-        function handleEmployeeChange() {
-    currentEmpId = document.getElementById('empSelect').value;
-    const sessionNameInput = document.getElementById('sessionNameInput');
-    const textArea = document.getElementById('orderCodes');
-    const liveCounter = document.getElementById('liveCounter');
+        // TÍNH NĂNG TẠM DỪNG CA LÀM
+        function togglePause() {
+            if (!currentEmpId || !activeSessions[currentEmpId]) return;
+            const session = activeSessions[currentEmpId];
+            if (session.isRemote) return;
 
-    if (!currentEmpId) {
-        resetSessionUI(true);
-        renderEmployeeListInInput();
-        return;
-    }
+            if (session.isPaused) {
+                // Tiếp tục: Bấm giờ lại từ bây giờ
+                session.isPaused = false;
+                session.startTime = new Date(); 
+            } else {
+                // Tạm dừng: Lưu lại số giây đã chạy vào accumulatedTime
+                session.isPaused = true;
+                const st = new Date(session.startTime);
+                session.accumulatedTime = (session.accumulatedTime || 0) + Math.floor((new Date() - st) / 1000);
+                session.startTime = null; 
+            }
 
-    const session = activeSessions[currentEmpId];
-    if (session) {
-        // Cập nhật tên ca và khóa input tên ca
-        sessionNameInput.value = session.sessionName || '';
-        sessionNameInput.disabled = true;
+            localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
+            handleEmployeeChange();
 
-        if (session.isRemote) {
-            // --- TRƯỜNG HỢP MÁY KHÁC ĐANG LÀM ---
-            document.getElementById('btnStart').disabled = true;
-            document.getElementById('btnEnd').disabled = true;
-
-            textArea.disabled = true;
-            textArea.value = `📢 CA LÀM: ${session.sessionName || '---'}\n\n🔒 NHÂN VIÊN ĐANG THAO TÁC TRÊN THIẾT BỊ KHÁC...\n(Số đơn và thời gian sẽ cập nhật tự động bên dưới)`;
-            textArea.className = "w-full border-2 p-3 rounded bg-blue-50 text-blue-800 font-bold text-center pt-10 focus:outline-none";
-            
-            // Ép hiển thị số đơn từ máy chủ (srvData)
-            liveCounter.innerText = `${session.orderCount || 0} đơn`;
-            liveCounter.className = "absolute bottom-4 right-4 bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold shadow-lg border border-white animate-pulse";
-        } else {
-            // --- TRƯỜNG HỢP CHÍNH MÁY NÀY ĐANG LÀM ---
-            document.getElementById('btnStart').disabled = true;
-            document.getElementById('btnEnd').disabled = false;
-            document.getElementById('btnEnd').classList.remove('opacity-50', 'cursor-not-allowed');
-
-            textArea.disabled = false;
-            textArea.value = session.codes || '';
-            textArea.className = "w-full border-2 p-3 rounded bg-white text-gray-800 border-blue-500 ring-2 focus:outline-none";
-            
-            // Tính toán số đơn từ text đang gõ
-            const codes = (session.codes || '').split('\n').map(c => c.trim()).filter(c => c !== '');
-            const uniqueCount = [...new Set(codes)].length;
-            liveCounter.innerText = `${uniqueCount} đơn`;
-            liveCounter.className = "absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-4 py-1.5 rounded-full font-bold shadow-lg border border-gray-600";
+            fetch(`${API_URL}/active-sessions`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: currentEmpId, action: 'update', sessionData: { isPaused: session.isPaused, accumulatedTime: session.accumulatedTime, startTime: session.startTime } })
+            }).catch(()=>{});
         }
-        updateStatusBlinker();
-    } else {
-        resetSessionUI(false);
-    }
-    renderEmployeeListInInput();
-}
+
+        function handleEmployeeChange() {
+            currentEmpId = document.getElementById('empSelect').value;
+            const sessionNameInput = document.getElementById('sessionNameInput');
+            const textArea = document.getElementById('orderCodes');
+            const liveCounter = document.getElementById('liveCounter');
+            const btnPause = document.getElementById('btnPause');
+
+            if (!currentEmpId) {
+                resetSessionUI(true);
+                renderEmployeeListInInput();
+                return;
+            }
+
+            const session = activeSessions[currentEmpId];
+            if (session) {
+                sessionNameInput.value = session.sessionName || '';
+                sessionNameInput.disabled = true;
+
+                if (session.isRemote) {
+                    document.getElementById('btnStart').disabled = true;
+                    document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('btnEnd').disabled = true;
+                    document.getElementById('btnEnd').classList.add('opacity-50', 'cursor-not-allowed');
+                    btnPause.classList.add('hidden');
+
+                    textArea.disabled = true;
+                    const statusText = session.isPaused ? "⏸ ĐANG TẠM DỪNG..." : "🔒 ĐANG THAO TÁC TRÊN THIẾT BỊ KHÁC...";
+                    textArea.value = `📢 CA LÀM: ${session.sessionName || '---'}\n\n${statusText}\n(Số đơn và thời gian sẽ cập nhật tự động bên dưới)`;
+                    textArea.className = "w-full border-2 p-3 rounded bg-blue-50 text-blue-800 font-bold text-center pt-10 focus:outline-none";
+                    
+                    liveCounter.innerText = `${session.orderCount || 0} đơn`;
+                    liveCounter.className = "absolute bottom-4 right-4 bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold shadow-lg border border-white animate-pulse";
+                } else {
+                    document.getElementById('btnStart').disabled = true;
+                    document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('btnEnd').disabled = false;
+                    document.getElementById('btnEnd').classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnPause.classList.remove('hidden');
+
+                    if (session.isPaused) {
+                        btnPause.innerText = '▶ Tiếp Tục';
+                        btnPause.className = "bg-green-500 text-white px-5 py-2 rounded font-bold hover:bg-green-600 shadow-md transition-colors";
+                        textArea.disabled = true;
+                        textArea.className = "w-full border-2 p-3 rounded bg-yellow-50 text-yellow-900 border-yellow-500 ring-2 focus:outline-none";
+                        textArea.value = session.codes || '';
+                        textArea.placeholder = "Đã tạm dừng. Bấm Tiếp Tục để dán thêm...";
+                    } else {
+                        btnPause.innerText = '⏸ Tạm Dừng';
+                        btnPause.className = "bg-yellow-500 text-white px-5 py-2 rounded font-bold hover:bg-yellow-600 shadow-md transition-colors";
+                        textArea.disabled = false;
+                        textArea.className = "w-full border-2 p-3 rounded bg-white text-gray-800 border-blue-500 ring-2 focus:outline-none";
+                        textArea.value = session.codes || '';
+                        textArea.placeholder = "Đang trong phiên làm việc. Dán mã vận đơn vào đây...";
+                    }
+                    
+                    const codes = (session.codes || '').split('\n').map(c => c.trim()).filter(c => c !== '');
+                    liveCounter.innerText = `${[...new Set(codes)].length} đơn`;
+                    liveCounter.className = "absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-4 py-1.5 rounded-full font-bold shadow-lg tracking-wide border border-gray-600";
+                }
+                updateStatusBlinker();
+            } else {
+                resetSessionUI(false);
+            }
+            renderEmployeeListInInput();
+        }
 
         function resetSessionUI(disableAll = false) {
             document.getElementById('btnStart').disabled = disableAll;
             document.getElementById('btnStart').className = disableAll ? "bg-green-600 text-white px-6 py-2 rounded font-bold shadow opacity-50 cursor-not-allowed" : "bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 shadow transition-colors";
             document.getElementById('btnEnd').disabled = true;
             document.getElementById('btnEnd').className = "bg-red-600 text-white px-6 py-2 rounded font-bold shadow opacity-50 cursor-not-allowed transition-colors";
+            document.getElementById('btnPause').classList.add('hidden');
 
             const textArea = document.getElementById('orderCodes');
             textArea.disabled = true;
@@ -455,50 +511,46 @@
 
         async function startSession() {
             if (!currentEmpId) return Swal.fire('Cảnh báo', 'Vui lòng chọn nhân viên!', 'warning');
-            
             const sessionNameInput = document.getElementById('sessionNameInput');
             const sessionName = sessionNameInput.value.trim();
-            if (!sessionName) {
-                return Swal.fire('Cảnh báo', 'Bạn PHẢI NHẬP TÊN CA LÀM trước khi bấm Bắt Đầu!', 'warning');
-            }
-
+            if (!sessionName) return Swal.fire('Cảnh báo', 'Bạn PHẢI NHẬP TÊN CA LÀM trước khi bấm Bắt Đầu!', 'warning');
             if (activeSessions[currentEmpId] && activeSessions[currentEmpId].isRemote) return;
 
-            activeSessions[currentEmpId] = { startTime: new Date(), codes: '', sessionName: sessionName };
+            // FIX: Cấy thêm originalStartTime để chốt chặt Giờ Bắt Đầu gốc
+            activeSessions[currentEmpId] = { 
+                originalStartTime: new Date(), 
+                startTime: new Date(), 
+                accumulatedTime: 0, 
+                isPaused: false, 
+                codes: '', 
+                sessionName: sessionName, 
+                orderCount: 0 
+            };
             localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
             handleEmployeeChange();
 
-            // Gửi Server Tên ca + Giờ bắt đầu + Mức 0 đơn
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    employeeId: currentEmpId, 
-                    action: 'start', 
-                    sessionData: { 
-                        sessionName: sessionName, 
-                        startTime: activeSessions[currentEmpId].startTime,
-                        orderCount: 0 
-                    } 
+                    employeeId: currentEmpId, action: 'start', 
+                    sessionData: { sessionName: sessionName, startTime: activeSessions[currentEmpId].startTime, orderCount: 0, isPaused: false, accumulatedTime: 0 } 
                 })
             }).catch(()=>{});
         }
 
-        // Đồng hồ đếm giờ hiển thị cho cả 2 máy
-        // Đồng hồ đếm giờ hiển thị cho cả máy đang làm và máy đang xem live
-setInterval(() => {
-    if (currentEmpId && activeSessions[currentEmpId]) {
-        const session = activeSessions[currentEmpId];
-        let st = session.startTime ? new Date(session.startTime) : null;
-        
-        if (st && !isNaN(st.getTime())) {
-            const now = new Date();
-            const diff = Math.floor((now - st) / 1000);
-            const m = Math.floor(diff / 60);
-            const s = diff % 60;
-            document.getElementById('sessionTimer').innerText = `🕒 Thời gian: ${m}p ${s}s (Bắt đầu lúc: ${st.toLocaleTimeString('vi-VN', {hour12:false})})`;
-        }
-    }
-}, 1000);
+        setInterval(() => {
+            if (currentEmpId && activeSessions[currentEmpId]) {
+                const session = activeSessions[currentEmpId];
+                let totalSeconds = session.accumulatedTime || 0;
+                if (!session.isPaused && session.startTime) {
+                    const st = new Date(session.startTime);
+                    if (!isNaN(st.getTime())) totalSeconds += Math.floor((new Date() - st) / 1000);
+                }
+                const h = Math.floor(totalSeconds / 3600); const m = Math.floor((totalSeconds % 3600) / 60); const s = totalSeconds % 60;
+                let text = h > 0 ? `${h}h ${m}p ${s}s` : `${m}p ${s}s`;
+                document.getElementById('sessionTimer').innerText = `🕒 T.gian chạy: ${text}`;
+            }
+        }, 1000);
 
         async function endSessionAndSave() {
             if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
@@ -511,13 +563,25 @@ setInterval(() => {
             if (total_orders === 0) return Swal.fire('Lỗi', 'Chưa có mã vận đơn nào được nhập!', 'error');
 
             const orderCodesString = uniqueCodes.join(', ');
-            const sessionStartTime = new Date(session.startTime);
             const sessionEndTime = new Date();
-            const work_date = sessionStartTime.toISOString().split('T')[0];
-            const start_time = sessionStartTime.toLocaleTimeString('vi-VN', {hour12: false});
-            const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
+            
+            let totalSeconds = session.accumulatedTime || 0;
+            if (!session.isPaused && session.startTime) totalSeconds += Math.floor((sessionEndTime - new Date(session.startTime)) / 1000);
+            if (totalSeconds === 0) totalSeconds = 1;
 
-            const totalSeconds = Math.floor((sessionEndTime - sessionStartTime) / 1000);
+            let start_time_string = "---";
+            let work_date = sessionEndTime.toISOString().split('T')[0];
+            
+            // FIX: Ưu tiên lấy Giờ Gốc (originalStartTime)
+            if (session.originalStartTime) {
+                const stD = new Date(session.originalStartTime);
+                if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
+            } else if (session.startTime) {
+                const stD = new Date(session.startTime);
+                if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
+            }
+
+            const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
             const averageTimePerOrder = (totalSeconds / total_orders).toFixed(1);
             
             const hours = Math.floor(totalSeconds / 3600);
@@ -528,78 +592,46 @@ setInterval(() => {
             Swal.fire({ title: 'Đang lưu dữ liệu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
             const logData = {
-                employee_id: currentEmpId, work_date, start_time, end_time, total_orders,
+                employee_id: currentEmpId, work_date, start_time: start_time_string, end_time, total_orders,
                 total_time_seconds: totalSeconds, average_time_per_order: averageTimePerOrder,
                 session_name: session.sessionName, order_codes: orderCodesString
             };
 
             try {
-                const res = await fetch(`${API_URL}/logs`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logData)
-                });
+                const res = await fetch(`${API_URL}/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logData) });
                 if (!res.ok) throw new Error('Lỗi máy chủ');
 
-                Swal.fire({
-                    title: 'Thành công',
-                    html: `<div class="text-left">
-                        <p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p>
-                        <p class="mb-2"><strong>🏷️ Ca:</strong> ${session.sessionName}</p>
-                        <p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p>
-                        <p class="mb-2"><strong>⏱️ Thời gian bắt đầu:</strong> ${start_time}</p>
-                        <p class="mb-2"><strong>⏱️ Thời gian kết thúc:</strong> ${end_time}</p>
-                        <p class="mb-2"><strong>⏳ Tổng thời gian ca:</strong> ${hours}h ${minutes}p ${seconds}s</p>
-                        <p class="mb-2"><strong>⏱️ Thời gian trung bình/đơn:</strong> ${averageTimePerOrder} giây</p>
-                    </div>`,
-                    icon: 'success'
-                });
-
-                fetch(`${API_URL}/active-sessions`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ employeeId: currentEmpId, action: 'end' })
-                }).catch(()=>{});
-
+                Swal.fire({ title: 'Thành công', icon: 'success', html: `<div class="text-left"><p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p><p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>⏳ Thời gian làm thực tế:</strong> ${hours}h ${minutes}p ${seconds}s</p><p class="mb-2"><strong>⏱️ Tốc độ trung bình:</strong> ${averageTimePerOrder} giây/đơn</p></div>` });
+                fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                 delete activeSessions[currentEmpId];
                 localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                 handleEmployeeChange();
             } catch (e) {
-                const safeData = { ...logData };
-                delete safeData.average_time_per_order;
-                safeData.session_name = session.sessionName;
-                safeData.order_codes = orderCodesString;
-
                 try {
-                    const { error: supabaseError } = await supabaseClient.from('productivity_logs').insert([safeData]);
-                    if (supabaseError) throw supabaseError;
-                    
-                    Swal.fire('Thành công', 'Đã lưu qua Supabase', 'success');
-
-                    fetch(`${API_URL}/active-sessions`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ employeeId: currentEmpId, action: 'end' })
-                    }).catch(()=>{});
-
+                    await supabaseClient.from('productivity_logs').insert([{ ...logData, session_name: session.sessionName, order_codes: orderCodesString }]);
+                    Swal.fire('Thành công', 'Đã lưu trực tiếp qua Supabase', 'success');
+                    fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                     delete activeSessions[currentEmpId];
                     localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                     handleEmployeeChange();
-                } catch (err) {
-                    Swal.fire('Lỗi', 'Không thể lưu dữ liệu: ' + (err.message || err), 'error');
-                }
+                } catch (err) { Swal.fire('Lỗi', 'Không thể lưu: ' + err.message, 'error'); }
             }
         }
 
         function updateStatusBlinker() {
             const statusDiv = document.getElementById('sessionStatus');
             if (currentEmpId && activeSessions[currentEmpId]) {
-                const sName = activeSessions[currentEmpId].sessionName || 'Đang làm việc';
-                const isRem = activeSessions[currentEmpId].isRemote ? '(Máy khác)' : '';
-                statusDiv.innerHTML = `<span class="status-pulse"></span><span class="text-green-600 font-bold">${sName} ${isRem}</span>`;
-            } else {
-                statusDiv.innerHTML = `<span class="text-gray-800">Chưa bắt đầu</span>`;
-            }
+                const s = activeSessions[currentEmpId];
+                if(s.isPaused) {
+                    statusDiv.innerHTML = `<span class="status-paused"></span><span class="text-yellow-600 font-bold">${s.sessionName || 'Ca làm'} (Tạm Dừng) ${s.isRemote ? '(Khác)' : ''}</span>`;
+                } else {
+                    statusDiv.innerHTML = `<span class="status-pulse"></span><span class="text-green-600 font-bold">${s.sessionName || 'Đang làm'} ${s.isRemote ? '(Khác)' : ''}</span>`;
+                }
+            } else { statusDiv.innerHTML = `<span class="text-gray-800">Chưa bắt đầu</span>`; }
         }
 
         // ==========================================
-        // MODULE: LỊCH SỬ LÀM VIỆC (MODAL)
+        // MODULE: LỊCH SỬ LÀM VIỆC VÀ TỔNG THỜI GIAN
         // ==========================================
         let currentHistoryEmpId = null;
 
@@ -611,9 +643,7 @@ setInterval(() => {
             fetchAndRenderHistory();
         }
 
-        function closeHistoryModal() {
-            document.getElementById('historyModal').classList.add('hidden');
-        }
+        function closeHistoryModal() { document.getElementById('historyModal').classList.add('hidden'); }
 
         async function fetchAndRenderHistory() {
             const date = document.getElementById('historyDateFilter').value;
@@ -624,37 +654,28 @@ setInterval(() => {
 
                 const tbody = document.getElementById('historyTableBody');
                 tbody.innerHTML = '';
-                let total = 0;
+                let totalOrders = 0;
+                let totalTimeAllSeconds = 0; 
 
                 if(data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500 italic font-medium">Chưa có dữ liệu làm việc trong ngày này.</td></tr>';
+                    document.getElementById('historyTotalOrders').innerHTML = `Tổng: 0 đơn`;
                 } else {
                     data.forEach(log => {
-                        total += log.total_orders;
-
-                        const parseSeconds = (timeStr) => {
-                            if (!timeStr) return 0;
-                            const parts = timeStr.split(':').map(Number);
-                            if (parts.length !== 3) return 0;
-                            return parts[0] * 3600 + parts[1] * 60 + parts[2];
-                        };
-
-                        let totalTime = log.total_time_seconds;
+                        totalOrders += log.total_orders;
+                        let totalTime = log.total_time_seconds || 0;
                         if (!totalTime || totalTime === 0) {
-                            const startSeconds = parseSeconds(log.start_time);
-                            const endSeconds = parseSeconds(log.end_time);
-                            totalTime = endSeconds > startSeconds ? endSeconds - startSeconds : 0;
+                            const parseSec = (ts) => { if(!ts) return 0; const p = ts.split(':').map(Number); return p.length===3 ? p[0]*3600+p[1]*60+p[2] : 0; };
+                            totalTime = parseSec(log.end_time) - parseSec(log.start_time);
+                            if(totalTime < 0) totalTime = 0;
                         }
+                        totalTimeAllSeconds += totalTime; 
 
-                        const hours = Math.floor(totalTime / 3600);
-                        const minutes = Math.floor((totalTime % 3600) / 60);
-                        const seconds = totalTime % 60;
+                        const hours = Math.floor(totalTime / 3600); const minutes = Math.floor((totalTime % 3600) / 60); const seconds = totalTime % 60;
                         const timeStr = totalTime > 0 ? `${hours}h ${minutes}p ${seconds}s` : '--';
 
                         let avgTime = log.average_time_per_order;
-                        if (!avgTime || avgTime === 0) {
-                            avgTime = log.total_orders > 0 ? (totalTime / log.total_orders).toFixed(1) : 0;
-                        }
+                        if (!avgTime || avgTime === 0) avgTime = log.total_orders > 0 ? (totalTime / log.total_orders).toFixed(1) : 0;
                         const avgTimeStr = avgTime > 0 ? `${avgTime}s` : '--';
 
                         const sessionName = log.session_name ? log.session_name : '---';
@@ -662,25 +683,26 @@ setInterval(() => {
                         const safeCodes = log.order_codes ? log.order_codes.replace(/'/g, "\\'") : '';
 
                         tbody.innerHTML += `
-                            <tr class="border-b hover:bg-white transition-colors">
+                            <tr class="border-b hover:bg-blue-50 transition-colors">
                                 <td class="p-3 text-gray-700">${log.work_date}</td>
                                 <td class="p-3 font-bold text-blue-800">${sessionName}</td>
                                 <td class="p-3 text-gray-600">${log.start_time}</td>
                                 <td class="p-3 text-gray-600">${log.end_time}</td>
                                 <td class="p-3 font-black text-green-600 text-right text-lg">+ ${log.total_orders}</td>
                                 <td class="p-3 text-gray-600 text-center">${timeStr}</td>
-                                <td class="p-3 text-gray-600 text-center">${avgTimeStr}</td>
+                                <td class="p-3 text-gray-600 text-center font-bold">${avgTimeStr}</td>
                                 <td class="p-3 text-center">
                                     <button onclick="showOrderCodesList('${safeCodes}', '${safeSessionName}')" class="bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors">👁️ Chi tiết</button>
                                 </td>
                             </tr>
                         `;
                     });
+                    
+                    const tH = Math.floor(totalTimeAllSeconds / 3600);
+                    const tM = Math.floor((totalTimeAllSeconds % 3600) / 60);
+                    document.getElementById('historyTotalOrders').innerHTML = `<span class="text-sm font-normal text-gray-500 block">Tổng thời gian chạy đơn: <b class="text-gray-800">${tH}h ${tM}phút</b></span> <span class="text-green-600 block mt-1">Sản lượng: ${totalOrders} đơn</span>`;
                 }
-                document.getElementById('historyTotalOrders').innerText = `Tổng sản lượng: ${total} đơn`;
-            } catch (error) {
-                Swal.fire('Chú ý', 'Đang mất kết nối với máy chủ Lịch sử!', 'info');
-            }
+            } catch (error) { Swal.fire('Chú ý', 'Đang mất kết nối với máy chủ Lịch sử!', 'info'); }
         }
 
         // ==========================================
@@ -709,16 +731,19 @@ setInterval(() => {
             const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ');
             employeesForSelect.forEach(emp => { 
                 const isWorking = Boolean(activeSessions[emp.id]);
+                const isPaused = isWorking && activeSessions[emp.id].isPaused;
                 const isRem = (isWorking && activeSessions[emp.id].isRemote) ? "(Máy khác)" : "";
-                const statusIcon = isWorking ? `🟢 ĐANG LÀM ${isRem}` : "⚪ Trống";
+                
+                let status = "⚪ Trống";
+                if(isWorking) status = isPaused ? `⏸ ĐANG DỪNG ${isRem}` : `🟢 ĐANG LÀM ${isRem}`;
                 
                 const option = document.createElement('option');
                 option.value = emp.id;
-                option.text = `${emp.name} (${emp.role}) - [${statusIcon}]`;
+                option.text = `${emp.name} (${emp.role}) - [${status}]`;
                 
                 if(isWorking) {
                     option.style.fontWeight = "bold";
-                    option.style.color = "#059669";
+                    option.style.color = isPaused ? "#ca8a04" : "#059669";
                 }
                 select.appendChild(option);
             });
@@ -785,21 +810,31 @@ setInterval(() => {
 
             allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
                 const isWorking = Boolean(activeSessions[emp.id]);
-                const isRem = (isWorking && activeSessions[emp.id].isRemote) ? '(Máy khác)' : '';
+                const isPaused = isWorking && activeSessions[emp.id].isPaused;
+                const isRem = (isWorking && activeSessions[emp.id].isRemote);
                 const isSelected = String(currentEmpId) === String(emp.id);
                 const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
                 const avatar = emp.avatar_url || defaultAvatar;
                 
+                let badge = '<span>Rảnh</span>';
+                if(isWorking) {
+                    if(isPaused) {
+                        badge = `<span class="status-paused"></span><span class="text-yellow-600">Đang dừng ${isRem ? '(Khác)' : ''}</span>`;
+                    } else {
+                        badge = `<span class="status-pulse" style="${isRem ? 'background-color:#f97316' : ''}"></span><span class="${isRem ? 'text-orange-500' : 'text-green-700'}">Đang làm ${isRem ? '(Khác)' : ''}</span>`;
+                    }
+                }
+
                 container.innerHTML += `
-                    <button type="button" onclick="selectEmployee('${emp.id}')" class="w-full text-left p-4 border rounded-lg transition-colors ${isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'}">
+                    <button type="button" onclick="selectEmployee('${emp.id}')" class="w-full text-left p-4 border rounded-lg transition-colors ${isSelected ? 'border-blue-400 bg-blue-50 ring-1' : 'border-gray-200 bg-white hover:bg-gray-50'}">
                         <div class="flex items-center gap-3">
                             <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-gray-200">
                             <div class="flex-1">
                                 <div class="font-bold text-gray-800">${emp.name}</div>
                                 <div class="text-xs text-gray-500">${emp.role}</div>
                             </div>
-                            <div class="flex items-center gap-2 text-xs font-bold ${isWorking ? (isRem ? 'text-orange-500' : 'text-green-700') : 'text-gray-500'}">
-                                ${isWorking ? `<span class="status-pulse" style="${isRem ? 'background-color:#f97316' : ''}"></span><span>Đang làm ${isRem}</span>` : '<span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-300"></span><span>Rảnh</span>'}
+                            <div class="flex items-center gap-2 text-xs font-bold text-gray-500">
+                                ${badge}
                             </div>
                         </div>
                     </button>`;
@@ -1081,7 +1116,7 @@ setInterval(() => {
         }
 
         // ==========================================
-        // MODULE: SƠ ĐỒ VÀ DASHBOARD (Giữ nguyên)
+        // MODULE: SƠ ĐỒ VÀ DASHBOARD 
         // ==========================================
         async function renderOrgChart() {
             await fetchEmployees();
@@ -1218,23 +1253,97 @@ setInterval(() => {
             });
         }
 
+        // Khởi tạo Dashboard với lọc ngày mặc định (3 ngày gần nhất)
         let empChartInstance = null; let dailyChartInstance = null;
-        const defaultDashboardDate = new Date();
-        defaultDashboardDate.setDate(defaultDashboardDate.getDate() - 1);
-        document.getElementById('filterDate').valueAsDate = defaultDashboardDate;
+        const endD = new Date();
+        const startD = new Date(); startD.setDate(startD.getDate() - 3);
+        document.getElementById('filterStartDate').valueAsDate = startD;
+        document.getElementById('filterEndDate').valueAsDate = endD;
         
         async function loadDashboards() {
-            const filterDate = document.getElementById('filterDate').value;
-            const resEmp = await fetch(`${API_URL}/stats/employees?date=${filterDate}`);
-            const dataEmp = await resEmp.json();
+            const fStart = document.getElementById('filterStartDate').value;
+            const fEnd = document.getElementById('filterEndDate').value;
             
-            if(empChartInstance) empChartInstance.destroy();
-            empChartInstance = new Chart(document.getElementById('empChart').getContext('2d'), { type: 'bar', data: { labels: dataEmp.map(d => d.name), datasets: [{ label: 'Số đơn', data: dataEmp.map(d => d.total), backgroundColor: '#3b82f6' }] } });
+            let queryParam = '';
+            if(fStart) queryParam += `startDate=${fStart}&`;
+            if(fEnd) queryParam += `endDate=${fEnd}`;
 
-            const resDaily = await fetch(`${API_URL}/stats/daily`);
+            const resEmp = await fetch(`${API_URL}/stats/employees?${queryParam}`);
+            const dataEmp = await resEmp.json();
+            if(empChartInstance) empChartInstance.destroy();
+            empChartInstance = new Chart(document.getElementById('empChart'), { type: 'bar', data: { labels: dataEmp.map(d => d.name), datasets: [{ label: 'Số đơn đóng gói', data: dataEmp.map(d => d.total), backgroundColor: '#3b82f6', borderRadius: 4 }] } });
+            
+            const resDaily = await fetch(`${API_URL}/stats/daily?${queryParam}`);
             const dataDaily = await resDaily.json();
             if(dailyChartInstance) dailyChartInstance.destroy();
-            dailyChartInstance = new Chart(document.getElementById('dailyChart').getContext('2d'), { type: 'line', data: { labels: dataDaily.map(d => d.work_date), datasets: [{ label: 'Tổng kho', data: dataDaily.map(d => d.total_daily_orders), borderColor: '#10b981', tension: 0.1, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.2)' }] } });
+            dailyChartInstance = new Chart(document.getElementById('dailyChart'), { type: 'line', data: { labels: dataDaily.map(d => d.work_date), datasets: [{ label: 'Tổng kho theo ngày', data: dataDaily.map(d => d.total_daily_orders), borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3 }] } });
+
+            const resSessions = await fetch(`${API_URL}/stats/sessions?${queryParam}`);
+            globalSessionLogsForDashboard = await resSessions.json();
+            
+            const sessionSelect = document.getElementById('sessionLeaderboardSelect');
+            const currentSelection = sessionSelect.value;
+            sessionSelect.innerHTML = '<option value="">-- Chọn tên ca làm --</option>';
+            
+            const uniqueSessionNames = [...new Set(globalSessionLogsForDashboard.map(log => log.session_name).filter(Boolean))];
+            uniqueSessionNames.forEach(sn => {
+                const opt = document.createElement('option');
+                opt.value = sn; opt.text = sn;
+                sessionSelect.appendChild(opt);
+            });
+            if(uniqueSessionNames.includes(currentSelection)) sessionSelect.value = currentSelection;
+            renderSessionLeaderboard();
+        }
+
+        function renderSessionLeaderboard() {
+            const container = document.getElementById('sessionLeaderboardContainer');
+            const selectedSession = document.getElementById('sessionLeaderboardSelect').value;
+            
+            if(!selectedSession) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500 italic py-4">Vui lòng chọn tên ca để phân tích tốc độ.</div>';
+                return;
+            }
+
+            const logsInSession = globalSessionLogsForDashboard.filter(log => log.session_name === selectedSession && log.employees);
+            const empStats = {};
+            
+            logsInSession.forEach(log => {
+                const empName = log.employees.name;
+                if(!empStats[empName]) empStats[empName] = { name: empName, totalOrders: 0, totalSeconds: 0 };
+                empStats[empName].totalOrders += log.total_orders;
+                empStats[empName].totalSeconds += log.total_time_seconds;
+            });
+
+            const rankingList = Object.values(empStats).map(stat => {
+                let avg = 0;
+                if(stat.totalOrders > 0) avg = (stat.totalSeconds / stat.totalOrders).toFixed(1);
+                return { ...stat, avgSpeed: parseFloat(avg) };
+            });
+
+            const validRanking = rankingList.filter(e => e.totalOrders > 0).sort((a, b) => a.avgSpeed - b.avgSpeed);
+
+            if(validRanking.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-red-500 italic py-4">Chưa có ai đóng đơn nào trong ca này ở khoảng thời gian trên!</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            validRanking.forEach((emp, index) => {
+                let crown = ''; let bg = 'bg-white'; let border = 'border-gray-200';
+                if(index === 0) { crown = '🥇'; bg = 'bg-yellow-50'; border = 'border-yellow-400'; }
+                else if(index === 1) { crown = '🥈'; bg = 'bg-gray-100'; border = 'border-gray-400'; }
+                else if(index === 2) { crown = '🥉'; bg = 'bg-orange-50'; border = 'border-orange-300'; }
+                else { crown = `#${index + 1}`; }
+
+                container.innerHTML += `
+                    <div class="p-4 rounded-xl border ${border} ${bg} shadow-sm relative overflow-hidden transition-transform hover:scale-105">
+                        <div class="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">Tổng: ${emp.totalOrders} đơn</div>
+                        <div class="text-2xl mb-1">${crown}</div>
+                        <div class="font-bold text-gray-800 text-lg line-clamp-1" title="${emp.name}">${emp.name}</div>
+                        <div class="mt-2 text-red-600 font-black text-xl">${emp.avgSpeed} <span class="text-sm font-medium text-gray-500">giây / đơn</span></div>
+                    </div>
+                `;
+            });
         }
 
         // Init App
