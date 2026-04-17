@@ -314,7 +314,55 @@
         // ==========================================
         // CHUYỂN TAB CƠ BẢN
         // ==========================================
+        const ADMIN_PIN = '8888'; // 👈 Đổi mã PIN của bác ở đây (mặc định đang là 8888)
+        let isAdminAuthenticated = false; // Trạng thái chưa mở khóa
+
         function switchTab(tabId) {
+            // Danh sách các tab cần bảo vệ
+            const protectedTabs = ['employees', 'orgchart', 'dashboard'];
+            
+            // Nếu bấm vào tab bảo vệ và chưa mở khóa
+            if (protectedTabs.includes(tabId) && !isAdminAuthenticated) {
+                Swal.fire({
+                    title: '🔒 Vùng Cấm!',
+                    text: 'Vui lòng nhập Mã PIN Quản lý để truy cập:',
+                    input: 'password',
+                    inputAttributes: {
+                        autocapitalize: 'off',
+                        autocorrect: 'off',
+                        placeholder: 'Nhập mã PIN...'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Mở khóa',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#3b82f6',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (result.value === ADMIN_PIN) {
+                            // Nhập đúng mã
+                            isAdminAuthenticated = true;
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Đã mở khóa!',
+                                text: 'Bạn có toàn quyền Quản lý.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            executeSwitchTab(tabId);
+                        } else {
+                            // Nhập sai mã
+                            Swal.fire('Từ chối', 'Sai Mã PIN! Bạn không có quyền truy cập.', 'error');
+                        }
+                    }
+                });
+            } else {
+                // Tab làm việc bình thường hoặc đã mở khóa rồi
+                executeSwitchTab(tabId);
+            }
+        }
+
+        // Hàm chạy thực tế sau khi đã qua cửa bảo vệ
+        function executeSwitchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             if(tabId === 'employees') loadEmployeesTable();
