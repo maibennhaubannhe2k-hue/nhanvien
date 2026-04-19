@@ -28,210 +28,322 @@
         .team-members-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         .team-member-card { background: white; border: 1px solid #93c5fd; border-radius: 6px; padding: 10px; width: 130px; text-align: center; font-size: 0.875rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer;}
         .team-member-card img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin: 0 auto 6px; }
-        .status-pulse {
-            display: inline-block; width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; margin-right: 5px;
-            animation: pulse-animation 1.5s infinite;
-        }
+        .status-pulse { display: inline-block; width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; margin-right: 5px; animation: pulse-animation 1.5s infinite; }
         .status-paused { display: inline-block; width: 10px; height: 10px; background-color: #eab308; border-radius: 50%; margin-right: 5px; }
 
-        @keyframes pulse-animation {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
+        @keyframes pulse-animation { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        
+        .group-card { transition: all 0.2s; }
+        .group-card.selected { border-color: #4f46e5 !important; background-color: #e0e7ff !important; box-shadow: 0 0 0 2px #c7d2fe; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans relative">
 
-    <nav class="bg-blue-800 text-white p-4 shadow-md">
-        <div class="max-w-7xl mx-auto flex gap-4 overflow-x-auto items-center justify-between">
-            <div class="flex gap-4 items-center">
-                <h1 class="text-xl font-bold mr-8 whitespace-nowrap">📦 Quản Lý Kho Pro</h1>
-                <button onclick="switchTab('input')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">🕒 Làm Việc & Sản Lượng</button>
-                <button onclick="switchTab('employees')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">👥 Hồ Sơ Nhân Viên</button>
-                <button onclick="switchTab('orgchart')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">🏢 Sơ Đồ Kho</button>
-                <button onclick="switchTab('dashboard')" class="hover:bg-blue-600 px-3 py-1 rounded font-semibold transition">📊 Dashboard</button>
+    <div class="hidden xl:flex fixed left-4 top-24 flex-col gap-4 z-40 w-64">
+        <div class="bg-white rounded-xl shadow-lg border border-blue-200 overflow-hidden">
+            <div class="bg-blue-600 text-white text-center py-2 font-bold text-xs uppercase tracking-wide">🏆 Cá Nhân Hôm Nay</div>
+            <div id="sideTopInd" class="p-3 space-y-2 bg-blue-50/50">
+                <div class="text-center text-gray-400 text-xs py-2 font-medium">Đang tải...</div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg border border-indigo-200 overflow-hidden">
+            <div class="bg-indigo-600 text-white text-center py-2 font-bold text-xs uppercase tracking-wide">🏆 Nhóm Hôm Nay</div>
+            <div id="sideTopGrp" class="p-3 space-y-2 bg-indigo-50/50">
+                <div class="text-center text-gray-400 text-xs py-2 font-medium">Đang tải...</div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bg-blue-800 text-white p-4 shadow-md sticky top-0 z-50 w-full">
+        <div class="w-full px-2 xl:px-6 mx-auto flex gap-4 overflow-x-auto items-center justify-between">
+            <div class="flex gap-2 lg:gap-4 items-center shrink-0">
+                <h1 class="text-xl font-bold mr-4 whitespace-nowrap">📦 ACBT Pro</h1>
+                <button onclick="switchTab('input')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">🕒 Cá Nhân</button>
+                <button onclick="switchTab('group')" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded font-semibold transition shadow whitespace-nowrap">👥 Làm Nhóm</button>
+                <button onclick="switchTab('employees')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">👥 Hồ Sơ</button>
+                <button onclick="switchTab('orgchart')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">🏢 Sơ Đồ</button>
+                <button onclick="switchTab('dashboard')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition border border-blue-400 whitespace-nowrap">📊 Dash: Cá Nhân</button>
+                <button onclick="switchTab('dashboardGroup')" class="hover:bg-indigo-600 px-3 py-2 rounded font-semibold transition border border-indigo-400 text-indigo-100 whitespace-nowrap">📈 Dash: Nhóm</button>
             </div>
             
-            <div class="flex items-center bg-white rounded-full px-3 py-1.5 shadow-inner min-w-[250px]">
-                <input type="text" id="globalSearchInput" placeholder="🔍 Tìm mã vận đơn..." class="outline-none text-sm text-gray-800 w-full bg-transparent font-medium" onkeypress="if(event.key === 'Enter') searchOrderCode()">
+            <div class="flex items-center bg-white rounded-full px-3 py-1.5 shadow-inner min-w-[250px] shrink-0">
+                <input type="text" id="globalSearchInput" placeholder="🔍 Tìm đơn..." class="outline-none text-sm text-gray-800 w-full bg-transparent font-medium" onkeypress="if(event.key === 'Enter') searchOrderCode()">
                 <button onclick="searchOrderCode()" class="text-blue-600 hover:text-blue-800 font-bold ml-2">Tìm</button>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-6 mt-4">
-        <div id="input" class="tab-content active bg-white p-6 rounded shadow">
-            <h2 class="text-2xl font-bold mb-4 text-blue-800">Phiên Làm Việc & Đóng Gói Đơn</h2>
+    <div class="w-full xl:w-[calc(100%-280px)] xl:ml-[280px] p-4 xl:p-8 mt-2 transition-all duration-300"> 
+        
+        <div id="input" class="tab-content active bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <h2 class="text-2xl font-bold mb-4 text-blue-800 border-b pb-2">Phiên Làm Việc Cá Nhân</h2>
             
-            <div class="bg-blue-50 p-4 rounded-lg mb-6 flex flex-col gap-4 border border-blue-200 shadow-sm">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="bg-blue-50 p-5 rounded-lg mb-6 flex flex-col gap-4 border border-blue-200 shadow-sm">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1">
                         <label class="block text-sm font-bold mb-1 text-gray-700">Chọn nhân viên đang thao tác:</label>
-                        <select id="empSelect" onchange="handleEmployeeChange()" class="w-full border-2 border-blue-300 p-2 rounded font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-3"></select>
+                        <select id="empSelect" onchange="handleEmployeeChange()" class="w-full border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-4"></select>
                         
                         <label class="block text-sm font-bold mb-1 text-gray-700">Tên ca làm (Bắt buộc):</label>
-                        <input type="text" id="sessionNameInput" placeholder="VD: Xử lý hàng hoàn, Ca sáng..." class="w-full border-2 border-blue-300 p-2 rounded font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <input type="text" id="sessionNameInput" placeholder="VD: Xử lý hàng hoàn, Ca sáng..." class="w-full border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                     </div>
-                    <div class="text-center lg:col-span-1">
-                        <div class="text-sm font-bold text-gray-500 uppercase">Trạng thái phiên</div>
-                        <div id="sessionStatus" class="text-xl font-black text-gray-800 mt-1 flex items-center justify-center">Chưa bắt đầu</div>
-                        <div id="sessionTimer" class="text-sm text-gray-500 mt-1 font-medium"></div>
+                    <div class="text-center lg:col-span-1 flex flex-col justify-center bg-white rounded-lg border border-blue-100 p-4">
+                        <div class="text-sm font-bold text-gray-500 uppercase tracking-wider">Trạng thái phiên</div>
+                        <div id="sessionStatus" class="text-2xl font-black text-gray-800 mt-2 flex items-center justify-center">Chưa bắt đầu</div>
+                        <div id="sessionTimer" class="text-sm text-gray-500 mt-2 font-medium bg-gray-50 py-1 px-3 rounded-full inline-block mx-auto">🕒 --:--:--</div>
                     </div>
-                    <div class="flex gap-2 lg:col-span-1 justify-end items-center flex-wrap">
-                        <button id="btnStart" onclick="startSession()" class="bg-green-600 text-white px-5 py-2 rounded font-bold hover:bg-green-700 shadow-md transition-colors">▶ Bắt Đầu</button>
-                        <button id="btnPause" onclick="togglePause()" class="hidden bg-yellow-500 text-white px-5 py-2 rounded font-bold hover:bg-yellow-600 shadow-md transition-colors">⏸ Tạm Dừng</button>
-                        <button id="btnEnd" onclick="endSessionAndSave()" class="bg-red-600 text-white px-5 py-2 rounded font-bold shadow-md opacity-50 cursor-not-allowed transition-colors" disabled>🛑 Kết Thúc & Lưu</button>
+                    <div class="flex gap-3 lg:col-span-1 flex-col justify-center">
+                        <button id="btnStart" onclick="startSession()" class="w-full bg-green-600 text-white px-5 py-3 rounded-lg font-bold hover:bg-green-700 shadow-md transition-colors text-lg">▶ Bắt Đầu</button>
+                        <div class="flex gap-2 w-full">
+                            <button id="btnPause" onclick="togglePause()" class="hidden flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-yellow-600 shadow-md transition-colors">⏸ Tạm Dừng</button>
+                            <button id="btnEnd" onclick="endSessionAndSave()" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-md opacity-50 cursor-not-allowed transition-colors" disabled>🛑 Kết Thúc & Lưu</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                    <div class="font-bold text-gray-700">Danh sách nhân viên</div>
-                    <div class="text-xs text-gray-500">Nhân viên đang làm sẽ hiển thị chấm xanh / vàng</div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm h-full flex flex-col">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 border-b border-gray-200 pb-2">
+                        <div class="font-bold text-gray-800 text-lg">Danh sách nhân viên</div>
+                        <div class="text-xs font-semibold text-gray-500 bg-white px-2 py-1 rounded shadow-sm">Chấm xanh: Đang làm</div>
+                    </div>
+                    <div id="employeeList" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-2 max-h-[400px]"></div>
                 </div>
-                <div id="employeeList" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"></div>
-            </div>
 
-            <div class="mb-4 relative">
-                <label class="block text-sm font-bold mb-1">Dán mã vận đơn (Hệ thống tự đếm và lưu ngầm cho từng người)</label>
-                <textarea id="orderCodes" rows="8" class="w-full border-2 p-3 rounded bg-gray-100 text-gray-800 focus:outline-none" placeholder="Bấm BẮT ĐẦU để kích hoạt ô dán mã..." disabled></textarea>
-                <div id="liveCounter" class="absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-4 py-1.5 rounded-full font-bold shadow-lg tracking-wide border border-gray-600">0 đơn</div>
+                <div class="relative h-full flex flex-col">
+                    <label class="block text-sm font-bold mb-2 text-gray-800">Dán mã vận đơn (Cá nhân)</label>
+                    <textarea id="orderCodes" class="w-full flex-1 min-h-[300px] border-2 border-gray-300 p-4 rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-colors resize-none font-mono tracking-wide" placeholder="Bấm BẮT ĐẦU để kích hoạt ô dán mã..." disabled></textarea>
+                    <div id="liveCounter" class="absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-5 py-2 rounded-full font-black text-xl shadow-lg tracking-wide border border-gray-600">0 đơn</div>
+                </div>
             </div>
         </div>
 
-        <div id="employees" class="tab-content bg-white p-6 rounded shadow">
-            <h2 class="text-2xl font-bold mb-4 text-blue-800">Quản Lý Hồ Sơ Nhân Sự</h2>
-            <div class="bg-gray-50 p-4 rounded border mb-6">
-                <h3 class="font-bold mb-3 border-b pb-2">Thêm nhân viên mới</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <input type="text" id="empName" placeholder="Họ và Tên *" class="border p-2 rounded">
-                    <select id="empRole" onchange="updateTeamFields()" class="border p-2 rounded">
-                        <option value="Quản lý">Quản lý</option>
-                        <option value="Tổ trưởng">Tổ trưởng</option>
-                        <option value="Nhân viên">Nhân viên</option>
-                    </select>
-                    <div id="teamSection" style="display:none;">
-                        <select id="empTeamNameSelect" class="border p-2 rounded w-full" style="display:block;">
-                            <option value="">-- Chọn tổ --</option>
-                        </select>
-                    </div>
-                    <input type="date" id="empDob" class="border p-2 rounded" title="Ngày sinh">
-                    <input type="text" id="empHometown" placeholder="Quê quán" class="border p-2 rounded">
-                    <input type="date" id="empJoinDate" class="border p-2 rounded" title="Ngày vào công ty">
-                    <input type="file" id="empAvatarFile" accept="image/*" class="border p-1 rounded text-sm bg-white cursor-pointer">
-                </div>
-                <button onclick="addEmployee()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 shadow">Tạo Hồ Sơ</button>
-            </div>
-
-            <div class="bg-gray-50 p-4 rounded border mb-6">
-                <h3 class="font-bold mb-3 border-b pb-2">Thêm Tổ Mới</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <input type="text" id="newTeamName" placeholder="Tên tổ mới (VD: Tổ Chạy Đơn A)" class="border p-2 rounded">
-                </div>
-                <button onclick="addTeam()" class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 shadow mr-4">Thêm Tổ Mới</button>
-                <div class="mt-4">
-                    <h4 class="font-bold mb-2">Danh sách tổ hiện tại:</h4>
-                    <div id="teamList" class="space-y-2"></div>
-                </div>
-            </div>
-
-            <table class="w-full border-collapse text-sm border bg-white shadow-sm rounded-lg overflow-hidden">
-                <thead class="bg-blue-100 text-blue-900 border-b-2 border-blue-200">
-                    <tr>
-                        <th class="p-3 text-left w-16">Ảnh</th>
-                        <th class="p-3 text-left">Họ Tên</th>
-                        <th class="p-3 text-left">Vị trí</th>
-                        <th class="p-3 text-left">Quê quán</th>
-                        <th class="p-3 text-center w-32">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody id="empTableBody"></tbody>
-            </table>
-        </div>
-
-        <div id="orgchart" class="tab-content bg-white p-6 rounded shadow">
-            <h2 class="text-2xl font-bold mb-6 text-center text-blue-800">Sơ Đồ Phân Cấp Nhân Sự</h2>
-            <div id="orgContainer" class="org-tree bg-gray-50 p-8 rounded border"></div>
-        </div>
-
-        <div id="dashboard" class="tab-content bg-white p-6 rounded shadow">
+        <div id="group" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200 min-h-[700px]">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 class="text-2xl font-bold text-blue-800">📊 Thống Kê Sản Lượng</h2>
-                <div class="flex items-center gap-3 bg-gray-100 p-2.5 rounded-lg border shadow-inner">
-                    <label class="font-bold text-sm text-gray-700">Từ:</label>
-                    <input type="date" id="filterStartDate" onchange="loadDashboards()" class="border p-1.5 rounded font-bold text-blue-700 bg-white shadow-sm outline-none">
-                    <label class="font-bold text-sm text-gray-700">Đến:</label>
-                    <input type="date" id="filterEndDate" onchange="loadDashboards()" class="border p-1.5 rounded font-bold text-blue-700 bg-white shadow-sm outline-none">
+                <div>
+                    <h2 class="text-2xl font-bold text-indigo-800">Cỗ Máy Chia Đơn - Đa Nhóm</h2>
+                    <p class="text-sm text-gray-600 mt-1">Tạo nhiều nhóm làm việc song song, tự động chia đều sản lượng cho các thành viên.</p>
+                </div>
+                <button onclick="openGroupCreation()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition flex items-center gap-2 transform hover:scale-105">
+                    <span class="text-2xl font-black leading-none">+</span> Bắt Đầu Nhóm Mới
+                </button>
+            </div>
+
+            <div id="groupCreationArea" style="display: none;" class="bg-indigo-50 rounded-xl border-2 border-indigo-200 shadow-md mb-8 p-6">
+                <div class="flex justify-between items-start mb-5 border-b border-indigo-100 pb-3">
+                    <h3 class="font-bold text-xl text-indigo-900">Thiết lập Nhóm Mới</h3>
+                    <button onclick="closeGroupCreation()" class="text-gray-400 hover:text-red-500 font-bold text-2xl transition-colors">&times;</button>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <label class="block text-sm font-bold mb-3 text-indigo-800 bg-indigo-100 py-1 px-3 rounded inline-block">1. Click chọn các thành viên (Ít nhất 2 người):</label>
+                        <div id="groupCreatorList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-3 bg-white rounded-lg border border-indigo-200 shadow-inner">
+                        </div>
+                    </div>
+                    <div class="flex flex-col justify-center bg-white p-5 rounded-lg border border-indigo-100 shadow-sm">
+                        <label class="block text-sm font-bold mb-2 text-indigo-800">2. Tên Nhóm / Tên Ca (Bắt buộc):</label>
+                        <input type="text" id="newGroupSessionName" placeholder="VD: Nhóm A bốc Hộp 8..." class="w-full border-2 border-indigo-300 p-3 rounded-lg font-bold mb-6 text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50/50">
+                        <button onclick="startCreatedGroup()" class="w-full bg-green-600 text-white py-4 rounded-lg font-black shadow-lg hover:bg-green-700 transition text-lg uppercase tracking-wide">🚀 Khởi Động</button>
+                    </div>
                 </div>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div class="bg-gray-50 p-4 rounded-xl border shadow-sm"><canvas id="empChart"></canvas></div>
-                <div class="bg-gray-50 p-4 rounded-xl border shadow-sm"><canvas id="dailyChart"></canvas></div>
+
+            <div id="activeGroupsContainer" class="grid grid-cols-1 gap-6">
+                <div class="text-center text-gray-400 py-16 italic border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
+                    <div class="text-4xl mb-3">😴</div>
+                    Chưa có nhóm nào đang chạy.<br>Bấm nút <b>"+ Bắt Đầu Nhóm Mới"</b> ở góc trên bên phải.
+                </div>
+            </div>
+        </div>
+
+        <div id="employees" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <h2 class="text-2xl font-bold mb-6 text-blue-800 border-b pb-2">Quản Lý Hồ Sơ Nhân Sự</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-sm">
+                    <h3 class="font-bold text-blue-900 mb-4 flex items-center gap-2"><span class="bg-blue-600 text-white w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span> Thêm Nhân Viên Mới</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                        <input type="text" id="empName" placeholder="Họ và Tên *" class="border-2 border-blue-200 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <select id="empRole" onchange="updateTeamFields()" class="border-2 border-blue-200 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <option value="Quản lý">Quản lý</option>
+                            <option value="Tổ trưởng">Tổ trưởng</option>
+                            <option value="Nhân viên" selected>Nhân viên</option>
+                        </select>
+                        <div id="teamSection" style="display:block;" class="sm:col-span-2">
+                            <select id="empTeamNameSelect" class="border-2 border-blue-200 p-2.5 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                <option value="">-- Chọn tổ cho nhân viên --</option>
+                            </select>
+                        </div>
+                        <input type="date" id="empDob" class="border-2 border-blue-200 p-2.5 rounded-lg text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400" title="Ngày sinh">
+                        <input type="text" id="empHometown" placeholder="Quê quán" class="border-2 border-blue-200 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <input type="date" id="empJoinDate" class="border-2 border-blue-200 p-2.5 rounded-lg text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400" title="Ngày vào công ty">
+                        <input type="file" id="empAvatarFile" accept="image/*" class="border-2 border-blue-200 p-1.5 rounded-lg bg-white cursor-pointer file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                    <button onclick="addEmployee()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 shadow-md transition-colors">Tạo Hồ Sơ</button>
+                </div>
+
+                <div class="bg-green-50 p-6 rounded-xl border border-green-100 shadow-sm flex flex-col">
+                    <h3 class="font-bold text-green-900 mb-4 flex items-center gap-2"><span class="bg-green-600 text-white w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span> Quản Lý Tổ / Đội</h3>
+                    <div class="flex gap-3 mb-6">
+                        <input type="text" id="newTeamName" placeholder="Tên tổ mới (VD: Tổ Chạy Đơn A)" class="flex-1 border-2 border-green-200 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <button onclick="addTeam()" class="bg-green-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-green-700 shadow-md transition-colors whitespace-nowrap">Thêm Tổ Mới</button>
+                    </div>
+                    <div class="flex-1 bg-white rounded-lg border border-green-100 p-4 shadow-inner overflow-y-auto max-h-[250px]">
+                        <h4 class="font-bold text-sm text-gray-500 uppercase tracking-wider mb-3">Danh sách tổ hiện tại</h4>
+                        <div id="teamList" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table class="w-full border-collapse text-sm text-left">
+                    <thead class="bg-gray-100 text-gray-700 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="p-4 w-20">Ảnh</th>
+                            <th class="p-4 font-bold">Họ Tên</th>
+                            <th class="p-4 font-bold">Vị trí</th>
+                            <th class="p-4 font-bold">Quê quán</th>
+                            <th class="p-4 font-bold text-center w-64">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="empTableBody" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="orgchart" class="tab-content bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+            <h2 class="text-3xl font-black mb-8 text-center text-blue-900 tracking-wide uppercase">Sơ Đồ Phân Cấp Nhân Sự</h2>
+            <div id="orgContainer" class="org-tree bg-slate-50 p-10 rounded-2xl border-2 border-slate-200 shadow-inner min-h-[500px]"></div>
+        </div>
+
+        <div id="dashboard" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b pb-4 gap-4">
+                <div>
+                    <h2 class="text-3xl font-black text-blue-800">📊 Thống Kê Cá Nhân</h2>
+                    <p class="text-sm text-gray-500 font-medium mt-1">Dữ liệu phân tích từ các ca làm độc lập.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-gray-100 p-3 rounded-xl border border-gray-200 shadow-sm">
+                    <label class="font-bold text-sm text-gray-700">Từ:</label>
+                    <input type="date" id="filterStartDate_Ind" onchange="loadDashboards('individual')" class="border border-gray-300 p-2 rounded-lg font-bold text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer">
+                    <label class="font-bold text-sm text-gray-700 ml-2">Đến:</label>
+                    <input type="date" id="filterEndDate_Ind" onchange="loadDashboards('individual')" class="border border-gray-300 p-2 rounded-lg font-bold text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer">
+                </div>
             </div>
             
-            <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
+                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2 flex items-center gap-2">📦 Sản lượng cá nhân</h3>
+                    <canvas id="empChart_Ind" class="w-full"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
+                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2 flex items-center gap-2">📈 Tổng kho theo ngày (Cá nhân)</h3>
+                    <canvas id="dailyChart_Ind" class="w-full"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 p-8 rounded-2xl border-2 border-blue-100 shadow-md">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div>
-                        <h3 class="text-xl font-black text-blue-900">🏆 Bảng Xếp Hạng Tốc Độ Theo Ca</h3>
-                        <p class="text-sm text-gray-600">Đánh giá ai đóng gói loại hàng này nhanh nhất</p>
+                        <h3 class="text-2xl font-black text-blue-900">🏆 Xếp Hạng Tốc Độ Đóng Gói</h3>
+                        <p class="text-sm text-blue-700 font-medium mt-1">Đánh giá hiệu suất độc lập của từng nhân viên</p>
                     </div>
-                    <select id="sessionLeaderboardSelect" onchange="renderSessionLeaderboard()" class="border-2 border-blue-300 p-2 rounded-lg font-bold text-blue-800 bg-white outline-none shadow-sm min-w-[200px]">
-                        <option value="">-- Chọn tên ca làm --</option>
+                    <select id="sessionLeaderboardSelect_Ind" onchange="renderSessionLeaderboard('individual')" class="border-2 border-blue-400 p-3 rounded-xl font-bold text-blue-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm min-w-[250px] cursor-pointer">
+                        <option value="">-- Chọn tên ca làm để phân tích --</option>
                     </select>
                 </div>
-                <div id="sessionLeaderboardContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <div class="col-span-full text-center text-gray-500 italic py-4">Vui lòng chọn khoảng thời gian và tên ca để xem bảng xếp hạng.</div>
+                <div id="sessionLeaderboardContainer_Ind" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <div class="col-span-full text-center text-blue-400 italic py-8 border-2 border-dashed border-blue-200 rounded-xl bg-white/50">Vui lòng chọn tên ca ở danh sách trên để xem bảng xếp hạng tốc độ.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboardGroup" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b pb-4 gap-4">
+                <div>
+                    <h2 class="text-3xl font-black text-indigo-800">📈 Thống Kê Làm Việc Nhóm</h2>
+                    <p class="text-sm text-gray-500 font-medium mt-1">Dữ liệu phân tích từ các ca làm chung đã chia đều.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-indigo-50 p-3 rounded-xl border border-indigo-200 shadow-sm">
+                    <label class="font-bold text-sm text-indigo-900">Từ:</label>
+                    <input type="date" id="filterStartDate_Grp" onchange="loadDashboards('group')" class="border border-indigo-300 p-2 rounded-lg font-bold text-indigo-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+                    <label class="font-bold text-sm text-indigo-900 ml-2">Đến:</label>
+                    <input type="date" id="filterEndDate_Grp" onchange="loadDashboards('group')" class="border border-indigo-300 p-2 rounded-lg font-bold text-indigo-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-lg hover:shadow-xl transition-shadow">
+                    <h3 class="font-bold text-lg mb-4 text-indigo-900 border-b border-indigo-50 pb-2 flex items-center gap-2">🤝 Thành tích nhận được từ Nhóm</h3>
+                    <canvas id="empChart_Grp" class="w-full"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-lg hover:shadow-xl transition-shadow">
+                    <h3 class="font-bold text-lg mb-4 text-indigo-900 border-b border-indigo-50 pb-2 flex items-center gap-2">📊 Tổng kho theo ngày (Nhóm)</h3>
+                    <canvas id="dailyChart_Grp" class="w-full"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-indigo-50 p-8 rounded-2xl border-2 border-indigo-100 shadow-md">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div>
+                        <h3 class="text-2xl font-black text-indigo-900">🏆 Xếp Hạng Tốc Độ (Đội Nhóm)</h3>
+                        <p class="text-sm text-indigo-700 font-medium mt-1">Tốc độ trung bình dựa trên sự phối hợp của cả team</p>
+                    </div>
+                    <select id="sessionLeaderboardSelect_Grp" onchange="renderSessionLeaderboard('group')" class="border-2 border-indigo-400 p-3 rounded-xl font-bold text-indigo-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm min-w-[250px] cursor-pointer">
+                        <option value="">-- Chọn tên nhóm / ca để phân tích --</option>
+                    </select>
+                </div>
+                <div id="sessionLeaderboardContainer_Grp" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <div class="col-span-full text-center text-indigo-400 italic py-8 border-2 border-dashed border-indigo-200 rounded-xl bg-white/50">Vui lòng chọn tên nhóm ở danh sách trên để xem đánh giá.</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="historyModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-6xl transform transition-all">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h3 class="text-xl font-bold text-blue-800" id="historyModalTitle">Lịch sử làm việc</h3>
-                <button onclick="closeHistoryModal()" class="text-gray-500 hover:text-red-500 font-bold text-3xl">&times;</button>
+    <div id="historyModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-white p-0 rounded-2xl shadow-2xl w-full max-w-6xl transform transition-all overflow-hidden flex flex-col max-h-full">
+            <div class="bg-blue-800 p-5 flex justify-between items-center text-white">
+                <h3 class="text-2xl font-bold flex items-center gap-3" id="historyModalTitle">👤 Lịch sử làm việc</h3>
+                <button onclick="closeHistoryModal()" class="text-blue-200 hover:text-white font-black text-3xl transition-colors leading-none">&times;</button>
             </div>
-            <div class="flex gap-4 mb-4 bg-blue-50 p-3 rounded border border-blue-100">
-                <div class="flex items-center gap-2">
-                    <label class="font-bold text-sm text-gray-700">Chọn ngày:</label>
-                    <input type="date" id="historyDateFilter" class="border p-1.5 rounded font-bold text-blue-700">
+            <div class="p-6 bg-gray-50 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row gap-4 items-end sm:items-center justify-between">
+                    <div class="flex items-center gap-3 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+                        <label class="font-bold text-sm text-gray-700 ml-2">Lọc theo ngày:</label>
+                        <input type="date" id="historyDateFilter" class="border-none bg-transparent p-2 rounded font-bold text-blue-700 focus:outline-none cursor-pointer">
+                    </div>
+                    <button onclick="fetchAndRenderHistory()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-md transition-colors text-lg">🔍 Lọc Dữ Liệu</button>
                 </div>
-                <button onclick="fetchAndRenderHistory()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-1.5 rounded font-bold shadow">Tra Cứu</button>
             </div>
-            <div class="max-h-80 overflow-y-auto border rounded bg-gray-50">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-gray-200 sticky top-0 shadow-sm">
-                        <tr>
-                            <th class="p-3 border-b font-bold text-gray-700">Ngày</th>
-                            <th class="p-3 border-b font-bold text-gray-700 text-blue-700">Tên Ca Làm</th>
-                            <th class="p-3 border-b font-bold text-gray-700">Giờ Bắt đầu</th>
-                            <th class="p-3 border-b font-bold text-gray-700">Giờ Kết thúc</th>
-                            <th class="p-3 border-b text-right font-bold text-gray-700">Sản lượng</th>
-                            <th class="p-3 border-b text-center font-bold text-gray-700">Tổng thời gian</th>
-                            <th class="p-3 border-b text-center font-bold text-gray-700">Thời gian TB/đơn</th>
-                            <th class="p-3 border-b text-center font-bold text-gray-700">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody"></tbody>
-                </table>
+            <div class="overflow-y-auto flex-1 p-6 bg-white">
+                <div class="border rounded-xl overflow-hidden shadow-sm">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead class="bg-gray-100 text-gray-800">
+                            <tr>
+                                <th class="p-4 border-b-2 font-bold whitespace-nowrap">Ngày</th>
+                                <th class="p-4 border-b-2 font-bold text-blue-800">Tên Ca Làm</th>
+                                <th class="p-4 border-b-2 font-bold whitespace-nowrap">Giờ Bắt đầu</th>
+                                <th class="p-4 border-b-2 font-bold whitespace-nowrap">Giờ Kết thúc</th>
+                                <th class="p-4 border-b-2 text-right font-bold text-green-700 whitespace-nowrap">Sản lượng</th>
+                                <th class="p-4 border-b-2 text-center font-bold whitespace-nowrap">Tổng thời gian</th>
+                                <th class="p-4 border-b-2 text-center font-bold whitespace-nowrap">Tốc độ (s/đơn)</th>
+                                <th class="p-4 border-b-2 text-center font-bold">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="mt-4 flex justify-between items-center border-t pt-3">
-                <div class="text-gray-500 font-medium italic">Thống kê dữ liệu trong ngày được chọn</div>
-                <div class="text-right text-xl" id="historyTotalOrders">Tổng: 0 đơn</div>
+            <div class="bg-gray-100 p-6 flex justify-between items-center border-t border-gray-200 rounded-b-2xl">
+                <div class="text-gray-500 font-medium text-sm">💡 Bao gồm cả thành tích cá nhân và số đơn được chia từ nhóm.</div>
+                <div class="text-right text-2xl font-black text-blue-900 bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-200" id="historyTotalOrders">Tổng: 0 đơn</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // CẤU HÌNH HỆ THỐNG
-        // ==========================================
-        const API_URL = 'https://backend-kho.onrender.com/api'; 
-        
-        // ⚠️ DÁN URL VÀ KEY SUPABASE CỦA BẠN VÀO 2 DÒNG DƯỚI ĐÂY ⚠️
+        const API_URL = 'https://backend-kho.onrender.com/api';
         const SUPABASE_URL_FRONTEND = 'https://ssvniazffehszaazxcdz.supabase.co';
         const SUPABASE_ANON_KEY_FRONTEND = 'sb_publishable_lzKyn9vzBAGSzWLbXVwnnQ_gzfA7DOb';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL_FRONTEND, SUPABASE_ANON_KEY_FRONTEND);
@@ -239,33 +351,44 @@
         let allEmployees = [];
         let activeSessions = {}; 
         let currentEmpId = null;
-        let globalSessionLogsForDashboard = [];
 
-        // ==========================================
-        // KHÔI PHỤC DỮ LIỆU TỪ LOCAL STORAGE
-        // ==========================================
+        let activeGroupSessions = {}; 
+        let tempGroupSelection = []; 
+
+        let globalSessionLogsForDashboard_Ind = [];
+        let globalSessionLogsForDashboard_Grp = [];
+
+        function getLocalDateString(dateStrOrObj) {
+            const date = dateStrOrObj ? new Date(dateStrOrObj) : new Date();
+            const offset = date.getTimezoneOffset() * 60000;
+            return (new Date(date.getTime() - offset)).toISOString().split('T')[0];
+        }
+
         function loadSessionsFromStorage() {
             const saved = localStorage.getItem('warehouse_active_sessions');
             if (saved) {
                 try {
                     activeSessions = JSON.parse(saved);
                     for (let id in activeSessions) {
-                        if (activeSessions[id].startTime) {
-                            activeSessions[id].startTime = new Date(activeSessions[id].startTime);
-                        }
-                        // FIX: Phục hồi Giờ Gốc (Original Start Time) để không bị đè giờ khi Tạm dừng
-                        if (activeSessions[id].originalStartTime) {
-                            activeSessions[id].originalStartTime = new Date(activeSessions[id].originalStartTime);
-                        }
+                        if (activeSessions[id].startTime) activeSessions[id].startTime = new Date(activeSessions[id].startTime);
+                        if (activeSessions[id].originalStartTime) activeSessions[id].originalStartTime = new Date(activeSessions[id].originalStartTime);
                     }
                 } catch (e) { activeSessions = {}; }
+            }
+
+            const savedGroups = localStorage.getItem('warehouse_group_sessions');
+            if (savedGroups) {
+                try {
+                    activeGroupSessions = JSON.parse(savedGroups);
+                    for (let gid in activeGroupSessions) {
+                        if (activeGroupSessions[gid].startTime) activeGroupSessions[gid].startTime = new Date(activeGroupSessions[gid].startTime);
+                        if (activeGroupSessions[gid].originalStartTime) activeGroupSessions[gid].originalStartTime = new Date(activeGroupSessions[gid].originalStartTime);
+                    }
+                } catch (e) { activeGroupSessions = {}; }
             }
         }
         loadSessionsFromStorage(); 
 
-        // ==========================================
-        // ĐỒNG BỘ LIVE TRACKING
-        // ==========================================
         setInterval(async () => {
             try {
                 const res = await fetch(`${API_URL}/active-sessions`);
@@ -280,95 +403,68 @@
                         
                         if (srv && !loc) {
                             activeSessions[emp.id] = { 
-                                isRemote: true, 
-                                sessionName: srv.sessionName, 
+                                isRemote: true, sessionName: srv.sessionName, 
                                 startTime: srv.startTime ? new Date(srv.startTime) : null,
-                                orderCount: srv.orderCount || 0,
-                                isPaused: srv.isPaused || false,
+                                orderCount: srv.orderCount || 0, isPaused: srv.isPaused || false,
                                 accumulatedTime: srv.accumulatedTime || 0
                             };
                             needsRender = true;
                         } 
                         else if (srv && loc && loc.isRemote) {
                             if (loc.orderCount !== srv.orderCount || loc.isPaused !== srv.isPaused || loc.accumulatedTime !== srv.accumulatedTime) {
-                                loc.orderCount = srv.orderCount;
-                                loc.isPaused = srv.isPaused;
-                                loc.accumulatedTime = srv.accumulatedTime;
+                                loc.orderCount = srv.orderCount; loc.isPaused = srv.isPaused; loc.accumulatedTime = srv.accumulatedTime;
                                 if(srv.startTime) loc.startTime = new Date(srv.startTime);
-                                needsHandleChange = true; 
-                                needsRender = true;
+                                needsHandleChange = true; needsRender = true;
                             }
                         }
                         else if (!srv && loc && loc.isRemote) {
                             delete activeSessions[emp.id];
-                            needsRender = true;
-                            needsHandleChange = true;
+                            needsRender = true; needsHandleChange = true;
                         }
                     }
                     if (needsRender) renderEmployeeListInInput();
                     if ((needsRender || needsHandleChange) && currentEmpId) handleEmployeeChange(); 
                 }
-            } catch (e) {}
+            } catch (e) { }
         }, 2000); 
 
-        // ==========================================
-        // CHUYỂN TAB CƠ BẢN
-        // ==========================================
-        const ADMIN_PIN = '8888'; // 👈 Đổi mã PIN của bác ở đây (mặc định đang là 8888)
-        let isAdminAuthenticated = false; // Trạng thái chưa mở khóa
+        const ADMIN_PIN = '8888'; 
+        let isAdminAuthenticated = false; 
 
         function switchTab(tabId) {
-            // Danh sách các tab cần bảo vệ
-            const protectedTabs = ['employees', 'orgchart', 'dashboard'];
-            
-            // Nếu bấm vào tab bảo vệ và chưa mở khóa
+            const protectedTabs = ['employees', 'orgchart', 'dashboard', 'dashboardGroup'];
             if (protectedTabs.includes(tabId) && !isAdminAuthenticated) {
                 Swal.fire({
                     title: '🔒 Vùng Cấm!',
                     text: 'Vui lòng nhập Mã PIN Quản lý để truy cập:',
                     input: 'password',
-                    inputAttributes: {
-                        autocapitalize: 'off',
-                        autocorrect: 'off',
-                        placeholder: 'Nhập mã PIN...'
-                    },
-                    showCancelButton: true,
-                    confirmButtonText: 'Mở khóa',
-                    cancelButtonText: 'Hủy',
-                    confirmButtonColor: '#3b82f6',
+                    inputAttributes: { autocapitalize: 'off', autocorrect: 'off', placeholder: 'Nhập mã PIN...' },
+                    showCancelButton: true, confirmButtonText: 'Mở khóa', cancelButtonText: 'Hủy', confirmButtonColor: '#3b82f6',
                 }).then((result) => {
                     if (result.isConfirmed) {
                         if (result.value === ADMIN_PIN) {
-                            // Nhập đúng mã
                             isAdminAuthenticated = true;
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Đã mở khóa!',
-                                text: 'Bạn có toàn quyền Quản lý.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            });
+                            Swal.fire({ icon: 'success', title: 'Đã mở khóa!', text: 'Bạn có toàn quyền Quản lý.', timer: 1500, showConfirmButton: false });
                             executeSwitchTab(tabId);
                         } else {
-                            // Nhập sai mã
                             Swal.fire('Từ chối', 'Sai Mã PIN! Bạn không có quyền truy cập.', 'error');
                         }
                     }
                 });
             } else {
-                // Tab làm việc bình thường hoặc đã mở khóa rồi
                 executeSwitchTab(tabId);
             }
         }
 
-        // Hàm chạy thực tế sau khi đã qua cửa bảo vệ
         function executeSwitchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             if(tabId === 'employees') loadEmployeesTable();
             if(tabId === 'orgchart') renderOrgChart();
-            if(tabId === 'dashboard') loadDashboards();
+            if(tabId === 'dashboard') loadDashboards('individual');
+            if(tabId === 'dashboardGroup') loadDashboards('group');
             if(tabId === 'input') loadEmployeesForSelect();
+            if(tabId === 'group') renderActiveGroups(); 
         }
 
         async function searchOrderCode() {
@@ -376,9 +472,14 @@
             if(!code) return Swal.fire('Chú ý', 'Vui lòng nhập mã vận đơn cần tìm', 'info');
             Swal.fire({ title: 'Đang tìm kiếm...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             try {
-                const res = await fetch(`${API_URL}/search?code=${code}`);
-                if(!res.ok) throw new Error("Lỗi API");
-                const logs = await res.json();
+                const { data: logs, error } = await supabaseClient
+                    .from('productivity_logs')
+                    .select('*, employees(name, role, team_name)')
+                    .ilike('order_codes', `%${code}%`)
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+
+                if(error) throw error;
                 if(logs.length === 0) {
                     Swal.fire('Không tìm thấy', `Mã <b>${code}</b> chưa được ai xử lý!`, 'info');
                 } else {
@@ -387,14 +488,14 @@
                         const empName = log.employees ? log.employees.name : "Nhân viên đã xóa";
                         html += `<div class="p-3 border rounded mb-2 bg-blue-50">
                             <p class="text-lg">👤 <b>Người xử lý:</b> <span class="text-blue-800 font-bold">${empName}</span></p>
-                            <p>🏷️ <b>Tên ca:</b> ${log.session_name || 'Không có tên'}</p>
+                            <p>🏷️ <b>Tên ca:</b> <span class="font-bold text-gray-700">${log.session_name || 'Không có tên'}</span></p>
                             <p>🕒 <b>Thời gian xử lý:</b> ${log.work_date} (Khoảng ${log.start_time})</p>
                         </div>`;
                     });
                     html += `</div>`;
                     Swal.fire({ title: 'Kết quả tìm kiếm', html: html, width: '600px' });
                 }
-            } catch(e) { Swal.fire('Lỗi', 'Máy chủ tìm kiếm đang bận hoặc bị lỗi. Thử lại sau!', 'error'); }
+            } catch(e) { Swal.fire('Lỗi', 'Lỗi truy xuất hệ thống. Thử lại sau!', 'error'); }
         }
 
         function showOrderCodesList(codesStr, sessionName) {
@@ -408,7 +509,7 @@
 
 
         // ==========================================
-        // MODULE: ĐA NHIỆM BẤM GIỜ & TẠM DỪNG MỚI NÂNG CẤP
+        // CÁ NHÂN
         // ==========================================
         document.getElementById('orderCodes').addEventListener('input', (e) => {
             if (currentEmpId && activeSessions[currentEmpId] && !activeSessions[currentEmpId].isRemote) {
@@ -425,9 +526,7 @@
         function updateCounter() {
             if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
             const codes = activeSessions[currentEmpId].codes.split('\n').map(c => c.trim()).filter(c => c !== '');
-            const uniqueCodes = [...new Set(codes)];
-            const newCount = uniqueCodes.length;
-            
+            const newCount = [...new Set(codes)].length;
             document.getElementById('liveCounter').innerText = `${newCount} đơn`;
             activeSessions[currentEmpId].orderCount = newCount;
             localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
@@ -438,18 +537,15 @@
             }).catch(()=>{});
         }
 
-        // TÍNH NĂNG TẠM DỪNG CA LÀM
         function togglePause() {
             if (!currentEmpId || !activeSessions[currentEmpId]) return;
             const session = activeSessions[currentEmpId];
             if (session.isRemote) return;
 
             if (session.isPaused) {
-                // Tiếp tục: Bấm giờ lại từ bây giờ
                 session.isPaused = false;
                 session.startTime = new Date(); 
             } else {
-                // Tạm dừng: Lưu lại số giây đã chạy vào accumulatedTime
                 session.isPaused = true;
                 const st = new Date(session.startTime);
                 session.accumulatedTime = (session.accumulatedTime || 0) + Math.floor((new Date() - st) / 1000);
@@ -493,10 +589,10 @@
                     textArea.disabled = true;
                     const statusText = session.isPaused ? "⏸ ĐANG TẠM DỪNG..." : "🔒 ĐANG THAO TÁC TRÊN THIẾT BỊ KHÁC...";
                     textArea.value = `📢 CA LÀM: ${session.sessionName || '---'}\n\n${statusText}\n(Số đơn và thời gian sẽ cập nhật tự động bên dưới)`;
-                    textArea.className = "w-full border-2 p-3 rounded bg-blue-50 text-blue-800 font-bold text-center pt-10 focus:outline-none";
+                    textArea.className = "w-full flex-1 min-h-[300px] border-2 p-4 rounded-lg bg-blue-50 text-blue-800 font-bold text-center focus:outline-none resize-none";
                     
                     liveCounter.innerText = `${session.orderCount || 0} đơn`;
-                    liveCounter.className = "absolute bottom-4 right-4 bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold shadow-lg border border-white animate-pulse";
+                    liveCounter.className = "absolute bottom-4 right-4 bg-orange-600 text-white px-5 py-2 rounded-full font-black text-xl shadow-lg border border-white animate-pulse";
                 } else {
                     document.getElementById('btnStart').disabled = true;
                     document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
@@ -506,23 +602,23 @@
 
                     if (session.isPaused) {
                         btnPause.innerText = '▶ Tiếp Tục';
-                        btnPause.className = "bg-green-500 text-white px-5 py-2 rounded font-bold hover:bg-green-600 shadow-md transition-colors";
+                        btnPause.className = "flex-1 bg-green-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-600 shadow-md transition-colors";
                         textArea.disabled = true;
-                        textArea.className = "w-full border-2 p-3 rounded bg-yellow-50 text-yellow-900 border-yellow-500 ring-2 focus:outline-none";
+                        textArea.className = "w-full flex-1 min-h-[300px] border-2 border-yellow-400 p-4 rounded-lg bg-yellow-50 text-yellow-900 focus:outline-none resize-none font-mono";
                         textArea.value = session.codes || '';
                         textArea.placeholder = "Đã tạm dừng. Bấm Tiếp Tục để dán thêm...";
                     } else {
                         btnPause.innerText = '⏸ Tạm Dừng';
-                        btnPause.className = "bg-yellow-500 text-white px-5 py-2 rounded font-bold hover:bg-yellow-600 shadow-md transition-colors";
+                        btnPause.className = "flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-yellow-600 shadow-md transition-colors";
                         textArea.disabled = false;
-                        textArea.className = "w-full border-2 p-3 rounded bg-white text-gray-800 border-blue-500 ring-2 focus:outline-none";
+                        textArea.className = "w-full flex-1 min-h-[300px] border-2 border-blue-400 p-4 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-none font-mono tracking-wide";
                         textArea.value = session.codes || '';
-                        textArea.placeholder = "Đang trong phiên làm việc. Dán mã vận đơn vào đây...";
+                        textArea.placeholder = "Đang trong phiên làm việc cá nhân. Dán mã vận đơn vào đây...";
                     }
                     
                     const codes = (session.codes || '').split('\n').map(c => c.trim()).filter(c => c !== '');
                     liveCounter.innerText = `${[...new Set(codes)].length} đơn`;
-                    liveCounter.className = "absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-4 py-1.5 rounded-full font-bold shadow-lg tracking-wide border border-gray-600";
+                    liveCounter.className = "absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-5 py-2 rounded-full font-black text-xl shadow-lg tracking-wide border border-gray-600";
                 }
                 updateStatusBlinker();
             } else {
@@ -533,15 +629,15 @@
 
         function resetSessionUI(disableAll = false) {
             document.getElementById('btnStart').disabled = disableAll;
-            document.getElementById('btnStart').className = disableAll ? "bg-green-600 text-white px-6 py-2 rounded font-bold shadow opacity-50 cursor-not-allowed" : "bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 shadow transition-colors";
+            document.getElementById('btnStart').className = disableAll ? "w-full bg-green-600 text-white px-5 py-3 rounded-lg font-bold shadow-md opacity-50 cursor-not-allowed text-lg" : "w-full bg-green-600 text-white px-5 py-3 rounded-lg font-bold hover:bg-green-700 shadow-md transition-colors text-lg";
             document.getElementById('btnEnd').disabled = true;
-            document.getElementById('btnEnd').className = "bg-red-600 text-white px-6 py-2 rounded font-bold shadow opacity-50 cursor-not-allowed transition-colors";
+            document.getElementById('btnEnd').className = "flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-md opacity-50 cursor-not-allowed transition-colors";
             document.getElementById('btnPause').classList.add('hidden');
 
             const textArea = document.getElementById('orderCodes');
             textArea.disabled = true;
             textArea.value = '';
-            textArea.className = "w-full border-2 p-3 rounded bg-gray-100 text-gray-800 focus:outline-none transition-colors";
+            textArea.className = "w-full flex-1 min-h-[300px] border-2 border-gray-300 p-4 rounded-lg bg-gray-50 text-gray-800 focus:outline-none transition-colors resize-none font-mono";
             textArea.placeholder = "Bấm BẮT ĐẦU để kích hoạt ô dán mã cho nhân viên này...";
 
             const sessionNameInput = document.getElementById('sessionNameInput');
@@ -554,7 +650,7 @@
             document.getElementById('sessionStatus').classList.remove('text-green-600');
             document.getElementById('sessionStatus').classList.add('text-gray-800');
             updateStatusBlinker();
-            document.getElementById('sessionTimer').innerText = "";
+            document.getElementById('sessionTimer').innerHTML = "🕒 --:--:--";
         }
 
         async function startSession() {
@@ -564,45 +660,21 @@
             if (!sessionName) return Swal.fire('Cảnh báo', 'Bạn PHẢI NHẬP TÊN CA LÀM trước khi bấm Bắt Đầu!', 'warning');
             if (activeSessions[currentEmpId] && activeSessions[currentEmpId].isRemote) return;
 
-            // FIX: Cấy thêm originalStartTime để chốt chặt Giờ Bắt Đầu gốc
             activeSessions[currentEmpId] = { 
-                originalStartTime: new Date(), 
-                startTime: new Date(), 
-                accumulatedTime: 0, 
-                isPaused: false, 
-                codes: '', 
-                sessionName: sessionName, 
-                orderCount: 0 
+                originalStartTime: new Date(), startTime: new Date(), accumulatedTime: 0, 
+                isPaused: false, codes: '', sessionName: sessionName, orderCount: 0 
             };
             localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
             handleEmployeeChange();
 
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    employeeId: currentEmpId, action: 'start', 
-                    sessionData: { sessionName: sessionName, startTime: activeSessions[currentEmpId].startTime, orderCount: 0, isPaused: false, accumulatedTime: 0 } 
-                })
+                body: JSON.stringify({ employeeId: currentEmpId, action: 'start', sessionData: { sessionName: sessionName, startTime: activeSessions[currentEmpId].startTime, orderCount: 0, isPaused: false, accumulatedTime: 0 } })
             }).catch(()=>{});
         }
 
-        setInterval(() => {
-            if (currentEmpId && activeSessions[currentEmpId]) {
-                const session = activeSessions[currentEmpId];
-                let totalSeconds = session.accumulatedTime || 0;
-                if (!session.isPaused && session.startTime) {
-                    const st = new Date(session.startTime);
-                    if (!isNaN(st.getTime())) totalSeconds += Math.floor((new Date() - st) / 1000);
-                }
-                const h = Math.floor(totalSeconds / 3600); const m = Math.floor((totalSeconds % 3600) / 60); const s = totalSeconds % 60;
-                let text = h > 0 ? `${h}h ${m}p ${s}s` : `${m}p ${s}s`;
-                document.getElementById('sessionTimer').innerText = `🕒 T.gian chạy: ${text}`;
-            }
-        }, 1000);
-
         async function endSessionAndSave() {
             if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
-
             const session = activeSessions[currentEmpId];
             const codes = session.codes.split('\n').map(c => c.trim()).filter(c => c !== '');
             const uniqueCodes = [...new Set(codes)];
@@ -618,51 +690,51 @@
             if (totalSeconds === 0) totalSeconds = 1;
 
             let start_time_string = "---";
-            let work_date = sessionEndTime.toISOString().split('T')[0];
+            const work_date = getLocalDateString(sessionEndTime);
             
-            // FIX: Ưu tiên lấy Giờ Gốc (originalStartTime)
             if (session.originalStartTime) {
                 const stD = new Date(session.originalStartTime);
-                if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
-            } else if (session.startTime) {
-                const stD = new Date(session.startTime);
                 if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
             }
 
             const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
             const averageTimePerOrder = (totalSeconds / total_orders).toFixed(1);
             
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
+            const hours = Math.floor(totalSeconds / 3600); const minutes = Math.floor((totalSeconds % 3600) / 60); const seconds = totalSeconds % 60;
             const empName = document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text;
 
             Swal.fire({ title: 'Đang lưu dữ liệu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
             const logData = {
-                employee_id: currentEmpId, work_date, start_time: start_time_string, end_time, total_orders,
-                total_time_seconds: totalSeconds, average_time_per_order: averageTimePerOrder,
+                employee_id: currentEmpId, work_date, start_time: start_time_string, end_time, 
+                total_orders: Number(total_orders), total_time_seconds: Number(totalSeconds), 
+                average_time_per_order: Number(averageTimePerOrder),
                 session_name: session.sessionName, order_codes: orderCodesString
             };
+
+            // HIỂN THỊ POPUP CHI TIẾT SAU KHI LƯU (CẢ LOCAL & TRỰC TIẾP)
+            const successHtml = `<div class="text-left"><p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p><p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>⏳ Thời gian làm thực tế:</strong> ${hours}h ${minutes}p ${seconds}s</p><p class="mb-2"><strong>⏱️ Tốc độ trung bình:</strong> ${averageTimePerOrder} giây/đơn</p></div>`;
 
             try {
                 const res = await fetch(`${API_URL}/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logData) });
                 if (!res.ok) throw new Error('Lỗi máy chủ');
 
-                Swal.fire({ title: 'Thành công', icon: 'success', html: `<div class="text-left"><p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p><p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>⏳ Thời gian làm thực tế:</strong> ${hours}h ${minutes}p ${seconds}s</p><p class="mb-2"><strong>⏱️ Tốc độ trung bình:</strong> ${averageTimePerOrder} giây/đơn</p></div>` });
+                Swal.fire({ title: 'Thành công', icon: 'success', html: successHtml });
                 fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                 delete activeSessions[currentEmpId];
                 localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                 handleEmployeeChange();
+                fetchDailyTop();
             } catch (e) {
                 try {
-                    await supabaseClient.from('productivity_logs').insert([{ ...logData, session_name: session.sessionName, order_codes: orderCodesString }]);
-                    Swal.fire('Thành công', 'Đã lưu trực tiếp qua Supabase', 'success');
+                    await supabaseClient.from('productivity_logs').insert([logData]);
+                    Swal.fire({ title: 'Thành công (Lưu trực tiếp)', icon: 'success', html: successHtml });
                     fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                     delete activeSessions[currentEmpId];
                     localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                     handleEmployeeChange();
-                } catch (err) { Swal.fire('Lỗi', 'Không thể lưu: ' + err.message, 'error'); }
+                    fetchDailyTop();
+                } catch (err) { Swal.fire('Lỗi', 'Không thể lưu vào CSDL: ' + err.message, 'error'); }
             }
         }
 
@@ -678,15 +750,490 @@
             } else { statusDiv.innerHTML = `<span class="text-gray-800">Chưa bắt đầu</span>`; }
         }
 
+        setInterval(() => {
+            if (currentEmpId && activeSessions[currentEmpId]) {
+                const session = activeSessions[currentEmpId];
+                let totalSeconds = session.accumulatedTime || 0;
+                if (!session.isPaused && session.startTime) {
+                    const st = new Date(session.startTime);
+                    if (!isNaN(st.getTime())) totalSeconds += Math.floor((new Date() - st) / 1000);
+                }
+                const h = Math.floor(totalSeconds / 3600); const m = Math.floor((totalSeconds % 3600) / 60); const s = totalSeconds % 60;
+                document.getElementById('sessionTimer').innerHTML = `🕒 ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }
+
+            Object.keys(activeGroupSessions).forEach(groupId => {
+                const grp = activeGroupSessions[groupId];
+                const timerEl = document.getElementById(`timer_${groupId}`);
+                if (timerEl) {
+                    let totalSecs = grp.accTime || 0;
+                    if (!grp.isPaused && grp.startTime) {
+                        const st = new Date(grp.startTime);
+                        if (!isNaN(st.getTime())) totalSecs += Math.floor((new Date() - st) / 1000);
+                    }
+                    const h = Math.floor(totalSecs / 3600); const m = Math.floor((totalSecs % 3600) / 60); const s = totalSecs % 60;
+                    timerEl.innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                }
+            });
+        }, 1000);
+
+
         // ==========================================
-        // MODULE: LỊCH SỬ LÀM VIỆC VÀ TỔNG THỜI GIAN
+        // LÀM VIỆC NHIỀU NHÓM
+        // ==========================================
+        window.toggleTempGroupSelection = function(empId) {
+            if(tempGroupSelection.includes(empId)) {
+                tempGroupSelection = tempGroupSelection.filter(id => id !== empId);
+            } else {
+                tempGroupSelection.push(empId);
+            }
+            renderGroupCreatorList();
+        };
+
+        function openGroupCreation() {
+            document.getElementById('groupCreationArea').style.display = 'block';
+            tempGroupSelection = []; 
+            document.getElementById('newGroupSessionName').value = '';
+            renderGroupCreatorList();
+        }
+
+        function closeGroupCreation() {
+            document.getElementById('groupCreationArea').style.display = 'none';
+            tempGroupSelection = [];
+        }
+
+        function renderGroupCreatorList() {
+            const container = document.getElementById('groupCreatorList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const busyEmpIdsInGroups = [];
+            Object.values(activeGroupSessions).forEach(g => {
+                g.members.forEach(id => busyEmpIdsInGroups.push(id));
+            });
+
+            allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
+                const empIdStr = emp.id; 
+                const isSelected = tempGroupSelection.includes(empIdStr);
+                const isBusyInOtherGroup = busyEmpIdsInGroups.includes(empIdStr);
+                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
+                const avatar = emp.avatar_url || defaultAvatar;
+                
+                let btnClass = "w-full text-left p-2.5 border rounded-xl transition-all bg-white hover:bg-indigo-50 border-gray-200 group-card flex items-center gap-3";
+                let cursor = "cursor-pointer";
+                let status = "";
+                
+                if (isBusyInOtherGroup) {
+                    btnClass = "w-full text-left p-2.5 border rounded-xl bg-gray-100 border-gray-300 opacity-60 flex items-center gap-3 grayscale";
+                    cursor = "cursor-not-allowed";
+                    status = "<div class='text-[10px] text-red-500 font-bold mt-0.5'>Đang bận nhóm khác</div>";
+                } else if (isSelected) {
+                    btnClass = "w-full text-left p-2.5 border-2 rounded-xl transition-all selected group-card border-indigo-500 bg-indigo-100 shadow-sm flex items-center gap-3 transform scale-[1.02]";
+                }
+
+                container.innerHTML += `
+                    <button type="button" class="${btnClass} ${cursor}" ${isBusyInOtherGroup ? 'disabled' : `onclick="toggleTempGroupSelection('${empIdStr}')"`}>
+                        <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                        <div class="overflow-hidden">
+                            <div class="font-bold text-gray-800 text-sm truncate" title="${emp.name}">${emp.name}</div>
+                            ${status}
+                        </div>
+                    </button>`;
+            });
+        }
+
+        function startCreatedGroup() {
+            if (tempGroupSelection.length < 2) return Swal.fire('Cảnh báo', 'Nhóm phải có ít nhất 2 thành viên!', 'warning');
+            const sessionName = document.getElementById('newGroupSessionName').value.trim();
+            if (!sessionName) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên Nhóm / Ca làm!', 'warning');
+
+            const groupId = 'group_' + Date.now();
+            activeGroupSessions[groupId] = {
+                name: sessionName,
+                members: [...tempGroupSelection],
+                originalStartTime: new Date(),
+                startTime: new Date(),
+                isPaused: false,
+                accTime: 0,
+                codes: ''
+            };
+            
+            localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
+            closeGroupCreation();
+            renderActiveGroups();
+        }
+
+        function renderActiveGroups() {
+            const container = document.getElementById('activeGroupsContainer');
+            container.innerHTML = '';
+            
+            const groupIds = Object.keys(activeGroupSessions);
+            if (groupIds.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-16 italic border-2 border-dashed border-gray-300 rounded-xl bg-gray-50"><div class="text-4xl mb-3">😴</div>Chưa có nhóm nào đang chạy.<br>Bấm nút <b>"+ Bắt Đầu Nhóm Mới"</b> ở góc trên bên phải.</div>';
+                return;
+            }
+
+            groupIds.forEach(groupId => {
+                const grp = activeGroupSessions[groupId];
+                
+                let memberAvatarsHtml = '';
+                grp.members.forEach(id => {
+                    const e = allEmployees.find(x => x.id === id);
+                    if(e) {
+                        const ava = e.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.name)}&background=random`;
+                        memberAvatarsHtml += `<img src="${ava}" class="w-10 h-10 rounded-full border-2 border-white -ml-3 first:ml-0 shadow-md" title="${e.name}">`;
+                    }
+                });
+
+                const codesList = grp.codes.split('\n').map(c => c.trim()).filter(c => c !== '');
+                const totalOrders = [...new Set(codesList)].length;
+                const perPerson = (totalOrders / grp.members.length).toFixed(1);
+
+                let bgColor = grp.isPaused ? 'bg-yellow-50/80' : 'bg-white';
+                let borderColor = grp.isPaused ? 'border-yellow-400' : 'border-indigo-200';
+                let textareaBg = grp.isPaused ? 'bg-yellow-100/50' : 'bg-indigo-50/50';
+                let btnPauseText = grp.isPaused ? '▶ Tiếp Tục Nhóm' : '⏸ Tạm Dừng Nhóm';
+                let btnPauseColor = grp.isPaused ? 'bg-green-500 hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600';
+                let statusDot = grp.isPaused ? '<span class="status-paused w-3 h-3"></span>' : '<span class="status-pulse w-3 h-3"></span>';
+
+                container.innerHTML += `
+                    <div class="${bgColor} rounded-2xl border-2 ${borderColor} shadow-lg overflow-hidden mb-6 transition-all">
+                        <div class="p-5 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-50/50">
+                            <div class="flex items-center gap-5">
+                                <div class="flex">${memberAvatarsHtml}</div>
+                                <div>
+                                    <h3 class="font-black text-xl text-gray-800 flex items-center tracking-tight">${statusDot} [NHÓM] ${grp.name}</h3>
+                                    <div class="text-sm font-medium text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded inline-block mt-1">${grp.members.length} thành viên đang chạy</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 w-full md:w-auto">
+                                <button onclick="toggleGroupPause('${groupId}')" class="${btnPauseColor} text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto">${btnPauseText}</button>
+                                <button onclick="endSpecificGroup('${groupId}')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto flex-shrink-0">🛑 Kết Thúc & Lưu Nhóm</button>
+                            </div>
+                        </div>
+                        <div class="p-5 grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
+                            <div class="lg:col-span-3">
+                                <textarea id="code_${groupId}" rows="5" oninput="updateGroupCode('${groupId}', this.value)" ${grp.isPaused ? 'disabled' : ''} class="w-full border-2 ${grp.isPaused ? 'border-yellow-300' : 'border-indigo-300'} p-4 rounded-xl ${textareaBg} focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-800 font-mono tracking-wide resize-none transition-colors" placeholder="${grp.isPaused ? 'Nhóm đang tạm dừng nghỉ ngơi...' : 'Dán mã vận đơn của cả nhóm vào đây...'}">${grp.codes}</textarea>
+                            </div>
+                            <div class="lg:col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-sm text-center flex flex-col justify-center h-full">
+                                <div class="text-gray-500 font-bold text-xs uppercase tracking-widest mb-1">Thời gian chạy</div>
+                                <div id="timer_${groupId}" class="font-mono font-black text-3xl text-gray-700 mb-4 bg-gray-100 py-2 rounded-lg">00:00:00</div>
+                                <div class="text-4xl font-black text-indigo-700 mb-2">${totalOrders} <span class="text-base font-bold text-indigo-400">đơn</span></div>
+                                <div class="text-sm font-bold text-red-600 bg-red-50 rounded-lg py-1.5 border border-red-100">~ ${perPerson} đơn / người</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateGroupCode(groupId, newCodes) {
+            if(activeGroupSessions[groupId]) {
+                activeGroupSessions[groupId].codes = newCodes;
+                localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
+                renderActiveGroups(); 
+            }
+        }
+
+        function toggleGroupPause(groupId) {
+            const grp = activeGroupSessions[groupId];
+            if(!grp) return;
+
+            if (grp.isPaused) {
+                grp.isPaused = false;
+                grp.startTime = new Date();
+            } else {
+                grp.isPaused = true;
+                const st = new Date(grp.startTime);
+                grp.accTime = (grp.accTime || 0) + Math.floor((new Date() - st) / 1000);
+                grp.startTime = null;
+            }
+            localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
+            renderActiveGroups();
+        }
+
+        async function endSpecificGroup(groupId) {
+            const grp = activeGroupSessions[groupId];
+            if(!grp) return;
+
+            const codesStr = grp.codes;
+            const codes = codesStr.split('\n').map(c => c.trim()).filter(c => c !== '');
+            const uniqueCodes = [...new Set(codes)];
+            const total_orders = uniqueCodes.length;
+
+            if (total_orders === 0) return Swal.fire('Lỗi', 'Nhóm này chưa nhập mã vận đơn nào!', 'error');
+
+            const sessionEndTime = new Date();
+            let totalSeconds = grp.accTime || 0;
+            if (!grp.isPaused && grp.startTime) totalSeconds += Math.floor((sessionEndTime - new Date(grp.startTime)) / 1000);
+            if (totalSeconds === 0) totalSeconds = 1;
+
+            const numPeople = grp.members.length;
+            const countPerPerson = Math.round(total_orders / numPeople); 
+            const avgTimePerOrder = Math.round(totalSeconds / countPerPerson);
+            
+            const work_date = getLocalDateString(sessionEndTime);
+            
+            let start_time_string = "---";
+            if (grp.originalStartTime) {
+                const stD = new Date(grp.originalStartTime);
+                if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
+            }
+
+            const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
+            const sessionName = grp.name;
+            const orderCodesString = uniqueCodes.join(', ');
+
+            Swal.fire({
+                title: `Kết thúc Nhóm: ${sessionName}?`,
+                html: `Tổng <b class="text-indigo-600 text-xl">${total_orders} đơn</b> chia đều cho <b class="text-indigo-600 text-xl">${numPeople} người</b>.<br><br>Mỗi người sẽ được cộng <b class="text-green-600 text-2xl">~${countPerPerson} đơn</b> vào lịch sử cá nhân.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Lưu & Giải tán Nhóm',
+                cancelButtonText: 'Đóng',
+                confirmButtonColor: '#dc2626'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Đang chia đơn...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                    let hasError = false;
+                    
+                    const logsArray = grp.members.map(empId => ({
+                        employee_id: empId, 
+                        work_date, 
+                        start_time: start_time_string, 
+                        end_time, 
+                        total_orders: Number(countPerPerson),
+                        total_time_seconds: Number(totalSeconds), 
+                        average_time_per_order: Number(avgTimePerOrder),
+                        session_name: `[NHÓM] ${sessionName}`, 
+                        order_codes: orderCodesString
+                    }));
+
+                    const successHtmlGroup = `<div class="text-left"><p class="mb-2"><strong>👥 Nhóm:</strong> ${sessionName}</p><p class="mb-2"><strong>📦 Tổng nhóm đóng:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>📈 Đã chia:</strong> ~${countPerPerson} đơn / người</p><p class="mb-2"><strong>⏱️ Tốc độ trung bình:</strong> ${avgTimePerOrder} giây/đơn</p></div>`;
+
+                    try {
+                        const { error } = await supabaseClient.from('productivity_logs').insert(logsArray);
+                        if(error) hasError = true;
+                    } catch(err) { hasError = true; }
+
+                    if (hasError) {
+                        Swal.fire('Lưu ý', 'Đã lưu nhưng có một vài lỗi nhỏ với đường truyền', 'info');
+                    } else {
+                        Swal.fire({ title: 'Thành công', icon: 'success', html: successHtmlGroup });
+                    }
+
+                    delete activeGroupSessions[groupId];
+                    localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
+                    renderActiveGroups();
+                    fetchDailyTop(); 
+                }
+            });
+        }
+
+        // ==========================================
+        // BXH BÊN TRÁI 
+        // ==========================================
+        async function fetchDailyTop() {
+            const today = getLocalDateString(new Date());
+            try {
+                const { data, error } = await supabaseClient.from('productivity_logs')
+                    .select('total_orders, session_name, employees(name)')
+                    .eq('work_date', today)
+                    .limit(100000);
+                    
+                if(error || !data) return;
+                
+                const indStats = {}; const grpStats = {};
+                data.forEach(log => {
+                    if(!log.employees) return;
+                    const name = log.employees.name;
+                    if (log.session_name && log.session_name.includes('[NHÓM]')) {
+                        grpStats[name] = (grpStats[name] || 0) + Number(log.total_orders);
+                    } else {
+                        indStats[name] = (indStats[name] || 0) + Number(log.total_orders);
+                    }
+                });
+
+                const sortTop3 = (obj) => Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0,3).map(e => ({ name: e[0], total: e[1] }));
+                const topInd = sortTop3(indStats);
+                const topGrp = sortTop3(grpStats);
+
+                const renderTop = (list, containerId, colorTheme) => {
+                    const container = document.getElementById(containerId);
+                    if(!list || list.length === 0) {
+                        container.innerHTML = '<div class="text-center text-gray-400 text-xs py-2 font-medium">Chưa có đơn nào</div>';
+                        return;
+                    }
+                    container.innerHTML = '';
+                    list.forEach((item, idx) => {
+                        let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
+                        container.innerHTML += `
+                            <div class="flex justify-between items-center border-b border-gray-100 pb-1.5 pt-1.5 last:border-0 last:pb-0">
+                                <div class="flex items-center gap-2 truncate">
+                                    <span class="text-base drop-shadow-sm">${medal}</span>
+                                    <span class="font-bold text-gray-700 truncate text-sm" title="${item.name}">${item.name}</span>
+                                </div>
+                                <span class="font-black text-${colorTheme}-600 flex-shrink-0 text-base">${item.total}</span>
+                            </div>
+                        `;
+                    });
+                };
+
+                renderTop(topInd, 'sideTopInd', 'blue');
+                renderTop(topGrp, 'sideTopGrp', 'indigo');
+            } catch(e){}
+        }
+
+        const endD = new Date();
+        const startD = new Date(); startD.setDate(startD.getDate() - 3);
+        document.getElementById('filterStartDate_Ind').value = getLocalDateString(startD);
+        document.getElementById('filterEndDate_Ind').value = getLocalDateString(endD);
+        document.getElementById('filterStartDate_Grp').value = getLocalDateString(startD);
+        document.getElementById('filterEndDate_Grp').value = getLocalDateString(endD);
+        
+        let empChartInstance = null; let empChartInstanceGrp = null; 
+        let dailyChartInstance = null; let dailyChartInstanceGrp = null;
+
+        async function loadDashboards(type = 'individual') {
+            const isGroup = type === 'group';
+            const suffix = isGroup ? '_Grp' : '_Ind';
+            
+            const fStart = document.getElementById(`filterStartDate${suffix}`).value;
+            const fEnd = document.getElementById(`filterEndDate${suffix}`).value;
+            
+            let query = supabaseClient.from('productivity_logs')
+                .select('total_orders, session_name, work_date, total_time_seconds, employees(name)')
+                .limit(100000);
+
+            if (fStart) query = query.gte('work_date', fStart);
+            if (fEnd) query = query.lte('work_date', fEnd);
+            
+            const { data, error } = await query;
+            if(error) return;
+
+            const filteredData = data.filter(log => {
+                const isLogGroup = log.session_name && log.session_name.includes('[NHÓM]');
+                return isGroup ? isLogGroup : !isLogGroup;
+            });
+
+            const empStats = {};
+            filteredData.forEach(log => {
+                if(log.employees) {
+                    const name = log.employees.name;
+                    empStats[name] = (empStats[name] || 0) + Number(log.total_orders);
+                }
+            });
+            const ctxEmp = document.getElementById(`empChart${suffix}`);
+            if(type === 'individual') {
+                if(empChartInstance) empChartInstance.destroy();
+                empChartInstance = new Chart(ctxEmp, { type: 'bar', data: { labels: Object.keys(empStats), datasets: [{ label: 'Số đơn cá nhân', data: Object.values(empStats), backgroundColor: '#3b82f6', borderRadius: 6 }] } });
+            } else {
+                if(empChartInstanceGrp) empChartInstanceGrp.destroy();
+                empChartInstanceGrp = new Chart(ctxEmp, { type: 'bar', data: { labels: Object.keys(empStats), datasets: [{ label: 'Đơn chia từ Nhóm', data: Object.values(empStats), backgroundColor: '#6366f1', borderRadius: 6 }] } });
+            }
+            
+            const dailyStats = {};
+            filteredData.forEach(log => {
+                const d = log.work_date;
+                dailyStats[d] = (dailyStats[d] || 0) + Number(log.total_orders);
+            });
+            const sortedDates = Object.keys(dailyStats).sort();
+            
+            const ctxDaily = document.getElementById(`dailyChart${suffix}`);
+            if(type === 'individual') {
+                if(dailyChartInstance) dailyChartInstance.destroy();
+                dailyChartInstance = new Chart(ctxDaily, { type: 'line', data: { labels: sortedDates, datasets: [{ label: 'Tổng kho (Cá nhân)', data: sortedDates.map(d=>dailyStats[d]), borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, borderWidth: 3 }] } });
+            } else {
+                if(dailyChartInstanceGrp) dailyChartInstanceGrp.destroy();
+                dailyChartInstanceGrp = new Chart(ctxDaily, { type: 'line', data: { labels: sortedDates, datasets: [{ label: 'Tổng kho (Nhóm)', data: sortedDates.map(d=>dailyStats[d]), borderColor: '#8b5cf6', fill: true, backgroundColor: 'rgba(139, 92, 246, 0.1)', tension: 0.3, borderWidth: 3 }] } });
+            }
+
+            const sessionSelect = document.getElementById(`sessionLeaderboardSelect${suffix}`);
+            const currentSelection = sessionSelect.value;
+            sessionSelect.innerHTML = '<option value="">-- Chọn tên ca làm để phân tích --</option>';
+            
+            const uniqueSessionNames = [...new Set(filteredData.map(log => log.session_name).filter(Boolean))];
+            uniqueSessionNames.forEach(sn => {
+                const opt = document.createElement('option');
+                opt.value = sn; 
+                opt.text = isGroup ? sn.replace('[NHÓM] ', '') : sn;
+                sessionSelect.appendChild(opt);
+            });
+            if(uniqueSessionNames.includes(currentSelection)) sessionSelect.value = currentSelection;
+            
+            if(type === 'individual') globalSessionLogsForDashboard_Ind = filteredData;
+            else globalSessionLogsForDashboard_Grp = filteredData;
+            
+            renderSessionLeaderboard(type);
+        }
+
+        function renderSessionLeaderboard(type = 'individual') {
+            const isGroup = type === 'group';
+            const suffix = isGroup ? '_Grp' : '_Ind';
+            
+            const container = document.getElementById(`sessionLeaderboardContainer${suffix}`);
+            const selectedSession = document.getElementById(`sessionLeaderboardSelect${suffix}`).value;
+            
+            if(!selectedSession) {
+                container.innerHTML = `<div class="col-span-full text-center text-${isGroup ? 'indigo' : 'blue'}-400 italic py-8 border-2 border-dashed border-${isGroup ? 'indigo' : 'blue'}-200 rounded-xl bg-white/50">Vui lòng chọn tên ${isGroup ? 'nhóm' : 'ca'} ở danh sách trên để xem bảng xếp hạng tốc độ.</div>`;
+                return;
+            }
+
+            const dataToUse = isGroup ? globalSessionLogsForDashboard_Grp : globalSessionLogsForDashboard_Ind;
+            const logsInSession = dataToUse.filter(log => log.session_name === selectedSession && log.employees);
+            const empStats = {};
+            
+            logsInSession.forEach(log => {
+                const empName = log.employees.name;
+                if(!empStats[empName]) empStats[empName] = { name: empName, totalOrders: 0, totalSeconds: 0 };
+                empStats[empName].totalOrders += Number(log.total_orders);
+                empStats[empName].totalSeconds += Number(log.total_time_seconds);
+            });
+
+            const rankingList = Object.values(empStats).map(stat => {
+                let avg = 0;
+                if(stat.totalOrders > 0) avg = (stat.totalSeconds / stat.totalOrders).toFixed(1);
+                return { ...stat, avgSpeed: parseFloat(avg) };
+            });
+
+            const validRanking = rankingList.filter(e => e.totalOrders > 0).sort((a, b) => a.avgSpeed - b.avgSpeed);
+
+            if(validRanking.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-red-500 italic py-4">Chưa có ai đóng đơn nào trong ca này!</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            validRanking.forEach((emp, index) => {
+                let crown = ''; let bg = 'bg-white'; let border = 'border-gray-200';
+                if(index === 0) { crown = '🥇'; bg = 'bg-yellow-50'; border = 'border-yellow-400'; }
+                else if(index === 1) { crown = '🥈'; bg = 'bg-gray-100'; border = 'border-gray-400'; }
+                else if(index === 2) { crown = '🥉'; bg = 'bg-orange-50'; border = 'border-orange-300'; }
+                else { crown = `#${index + 1}`; }
+
+                const themeColor = isGroup ? 'indigo' : 'blue';
+
+                container.innerHTML += `
+                    <div class="p-5 rounded-2xl border-2 ${border} ${bg} shadow-md relative overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-lg">
+                        <div class="absolute top-0 right-0 bg-${themeColor}-600 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm">Tổng: ${emp.totalOrders} đơn</div>
+                        <div class="text-3xl mb-2 drop-shadow-sm">${crown}</div>
+                        <div class="font-black text-gray-800 text-xl line-clamp-1 mb-1" title="${emp.name}">${emp.name}</div>
+                        <div class="mt-3 text-red-600 font-black text-2xl">${emp.avgSpeed} <span class="text-sm font-bold text-gray-500">giây / đơn</span></div>
+                    </div>
+                `;
+            });
+        }
+
+        // ==========================================
+        // LỊCH SỬ 
         // ==========================================
         let currentHistoryEmpId = null;
 
         function openHistoryModal(empId, empName) {
             currentHistoryEmpId = empId;
-            document.getElementById('historyModalTitle').innerText = `👤 Lịch sử làm việc: ${empName}`;
-            document.getElementById('historyDateFilter').valueAsDate = new Date();
+            document.getElementById('historyModalTitle').innerHTML = `👤 Lịch sử làm việc: <span class="text-blue-300">${empName}</span>`;
+            document.getElementById('historyDateFilter').value = getLocalDateString(new Date());
             document.getElementById('historyModal').classList.remove('hidden');
             fetchAndRenderHistory();
         }
@@ -696,22 +1243,29 @@
         async function fetchAndRenderHistory() {
             const date = document.getElementById('historyDateFilter').value;
             try {
-                const res = await fetch(`${API_URL}/history?employee_id=${currentHistoryEmpId}&date=${date}`);
-                if (!res.ok) throw new Error("Chưa có API History");
-                const data = await res.json();
+                let query = supabaseClient.from('productivity_logs')
+                    .select('*')
+                    .eq('employee_id', currentHistoryEmpId)
+                    .order('created_at', { ascending: false })
+                    .limit(10000);
+
+                if (date) query = query.eq('work_date', date);
+
+                const { data, error } = await query;
+                if (error) throw error;
 
                 const tbody = document.getElementById('historyTableBody');
                 tbody.innerHTML = '';
                 let totalOrders = 0;
                 let totalTimeAllSeconds = 0; 
 
-                if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500 italic font-medium">Chưa có dữ liệu làm việc trong ngày này.</td></tr>';
+                if(!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-10 text-gray-500 italic font-medium text-lg bg-gray-50">😴 Chưa có dữ liệu làm việc trong ngày này.</td></tr>';
                     document.getElementById('historyTotalOrders').innerHTML = `Tổng: 0 đơn`;
                 } else {
                     data.forEach(log => {
-                        totalOrders += log.total_orders;
-                        let totalTime = log.total_time_seconds || 0;
+                        totalOrders += Number(log.total_orders);
+                        let totalTime = Number(log.total_time_seconds) || 0;
                         if (!totalTime || totalTime === 0) {
                             const parseSec = (ts) => { if(!ts) return 0; const p = ts.split(':').map(Number); return p.length===3 ? p[0]*3600+p[1]*60+p[2] : 0; };
                             totalTime = parseSec(log.end_time) - parseSec(log.start_time);
@@ -722,25 +1276,28 @@
                         const hours = Math.floor(totalTime / 3600); const minutes = Math.floor((totalTime % 3600) / 60); const seconds = totalTime % 60;
                         const timeStr = totalTime > 0 ? `${hours}h ${minutes}p ${seconds}s` : '--';
 
-                        let avgTime = log.average_time_per_order;
-                        if (!avgTime || avgTime === 0) avgTime = log.total_orders > 0 ? (totalTime / log.total_orders).toFixed(1) : 0;
+                        let avgTime = Number(log.average_time_per_order);
+                        if (!avgTime || avgTime === 0) avgTime = Number(log.total_orders) > 0 ? (totalTime / Number(log.total_orders)).toFixed(1) : 0;
                         const avgTimeStr = avgTime > 0 ? `${avgTime}s` : '--';
 
                         const sessionName = log.session_name ? log.session_name : '---';
+                        const isGroup = sessionName.startsWith('[NHÓM]');
+                        const styleName = isGroup ? `<span class="bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded text-xs font-bold mr-2 border border-indigo-200">Nhóm</span> ${sessionName.replace('[NHÓM] ', '')}` : sessionName;
+
                         const safeSessionName = sessionName.replace(/'/g, "\\'");
                         const safeCodes = log.order_codes ? log.order_codes.replace(/'/g, "\\'") : '';
 
                         tbody.innerHTML += `
-                            <tr class="border-b hover:bg-blue-50 transition-colors">
-                                <td class="p-3 text-gray-700">${log.work_date}</td>
-                                <td class="p-3 font-bold text-blue-800">${sessionName}</td>
-                                <td class="p-3 text-gray-600">${log.start_time}</td>
-                                <td class="p-3 text-gray-600">${log.end_time}</td>
-                                <td class="p-3 font-black text-green-600 text-right text-lg">+ ${log.total_orders}</td>
-                                <td class="p-3 text-gray-600 text-center">${timeStr}</td>
-                                <td class="p-3 text-gray-600 text-center font-bold">${avgTimeStr}</td>
-                                <td class="p-3 text-center">
-                                    <button onclick="showOrderCodesList('${safeCodes}', '${safeSessionName}')" class="bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors">👁️ Chi tiết</button>
+                            <tr class="hover:bg-blue-50 transition-colors">
+                                <td class="p-4 border-b border-gray-100 text-gray-600 whitespace-nowrap">${log.work_date}</td>
+                                <td class="p-4 border-b border-gray-100 font-bold text-gray-800">${styleName}</td>
+                                <td class="p-4 border-b border-gray-100 text-gray-500 whitespace-nowrap">${log.start_time}</td>
+                                <td class="p-4 border-b border-gray-100 text-gray-500 whitespace-nowrap">${log.end_time}</td>
+                                <td class="p-4 border-b border-gray-100 font-black text-green-600 text-right text-lg whitespace-nowrap">+ ${log.total_orders}</td>
+                                <td class="p-4 border-b border-gray-100 text-gray-600 text-center whitespace-nowrap">${timeStr}</td>
+                                <td class="p-4 border-b border-gray-100 text-gray-800 text-center font-bold whitespace-nowrap">${avgTimeStr}</td>
+                                <td class="p-4 border-b border-gray-100 text-center">
+                                    <button onclick="showOrderCodesList('${safeCodes}', '${safeSessionName}')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-colors whitespace-nowrap">👁️ Chi tiết</button>
                                 </td>
                             </tr>
                         `;
@@ -748,424 +1305,21 @@
                     
                     const tH = Math.floor(totalTimeAllSeconds / 3600);
                     const tM = Math.floor((totalTimeAllSeconds % 3600) / 60);
-                    document.getElementById('historyTotalOrders').innerHTML = `<span class="text-sm font-normal text-gray-500 block">Tổng thời gian chạy đơn: <b class="text-gray-800">${tH}h ${tM}phút</b></span> <span class="text-green-600 block mt-1">Sản lượng: ${totalOrders} đơn</span>`;
+                    document.getElementById('historyTotalOrders').innerHTML = `<span class="text-sm font-bold text-gray-500 block uppercase tracking-wider mb-1">Tổng thời gian chạy: <span class="text-gray-800">${tH}h ${tM}phút</span></span> <span class="text-green-600 block">Sản lượng: ${totalOrders} đơn</span>`;
                 }
-            } catch (error) { Swal.fire('Chú ý', 'Đang mất kết nối với máy chủ Lịch sử!', 'info'); }
+            } catch (error) {}
         }
 
         // ==========================================
-        // MODULE: HỒ SƠ & NHÂN SỰ
+        // SƠ ĐỒ KHO VÀ NHÂN SỰ
         // ==========================================
         async function fetchEmployees() {
-            try {
-                const res = await fetch(`${API_URL}/employees`);
-                if (!res.ok) throw new Error('Lỗi API nhân viên');
-                allEmployees = await res.json();
-                return allEmployees;
-            } catch (error) {
-                const { data, error: supabaseError } = await supabaseClient.from('employees').select('*');
-                if (supabaseError) throw supabaseError;
-                allEmployees = data;
-                return allEmployees;
-            }
+            const { data, error } = await supabaseClient.from('employees').select('*').order('created_at', { ascending: false });
+            if(error) return [];
+            allEmployees = data;
+            return data;
         }
 
-        async function loadEmployeesForSelect() {
-            await fetchEmployees();
-            const select = document.getElementById('empSelect');
-            const savedId = select.value; 
-            select.innerHTML = '<option value="">-- Bấm để chọn nhân viên --</option>';
-    
-            const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ');
-            employeesForSelect.forEach(emp => { 
-                const isWorking = Boolean(activeSessions[emp.id]);
-                const isPaused = isWorking && activeSessions[emp.id].isPaused;
-                const isRem = (isWorking && activeSessions[emp.id].isRemote) ? "(Máy khác)" : "";
-                
-                let status = "⚪ Trống";
-                if(isWorking) status = isPaused ? `⏸ ĐANG DỪNG ${isRem}` : `🟢 ĐANG LÀM ${isRem}`;
-                
-                const option = document.createElement('option');
-                option.value = emp.id;
-                option.text = `${emp.name} (${emp.role}) - [${status}]`;
-                
-                if(isWorking) {
-                    option.style.fontWeight = "bold";
-                    option.style.color = isPaused ? "#ca8a04" : "#059669";
-                }
-                select.appendChild(option);
-            });
-            
-            select.value = savedId;
-            loadTeamNamesForSelect();
-            updateTeamFields();
-            
-            const teamLeadSelect = document.getElementById('empTeamLead');
-            if (teamLeadSelect) {
-                const currentValue = teamLeadSelect.value;
-                teamLeadSelect.innerHTML = '<option value="">-- Tổ trưởng quản lý --</option>';
-                allEmployees.filter(e => e.role && e.role.includes('Tổ trưởng')).forEach(lead => {
-                    const opt = document.createElement('option');
-                    opt.value = lead.id;
-                    opt.text = lead.name;
-                    teamLeadSelect.appendChild(opt);
-                });
-                teamLeadSelect.value = currentValue;
-            }
-            renderEmployeeListInInput();
-        }
-
-        function selectEmployee(empId) {
-            currentEmpId = empId;
-            document.getElementById('empSelect').value = empId;
-            handleEmployeeChange();
-            renderEmployeeListInInput();
-        }
-
-        function loadTeamNamesForSelect() {
-            const select = document.getElementById('empTeamNameSelect');
-            if (!select) return;
-            const currentValue = select.value || '';
-            select.innerHTML = '<option value="">-- Chọn tổ --</option>';
-            
-            const teamNames = [...new Set(allEmployees.filter(e => e.team_name).map(e => e.team_name))];
-            teamNames.forEach(teamName => {
-                const opt = document.createElement('option');
-                opt.value = teamName;
-                opt.text = teamName;
-                select.appendChild(opt);
-            });
-            select.value = currentValue;
-        }
-
-        function updateTeamFields() {
-            const role = document.getElementById('empRole')?.value;
-            const teamSection = document.getElementById('teamSection');
-            if (!teamSection) return;
-            
-            if (role === 'Nhân viên' || role === 'Tổ trưởng') {
-                teamSection.style.display = 'block';
-                loadTeamNamesForSelect();
-            } else {
-                teamSection.style.display = 'none';
-            }
-        }
-
-        function renderEmployeeListInInput() {
-            const container = document.getElementById('employeeList');
-            if (!container) return;
-            container.innerHTML = '';
-
-            allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
-                const isWorking = Boolean(activeSessions[emp.id]);
-                const isPaused = isWorking && activeSessions[emp.id].isPaused;
-                const isRem = (isWorking && activeSessions[emp.id].isRemote);
-                const isSelected = String(currentEmpId) === String(emp.id);
-                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
-                const avatar = emp.avatar_url || defaultAvatar;
-                
-                let badge = '<span>Rảnh</span>';
-                if(isWorking) {
-                    if(isPaused) {
-                        badge = `<span class="status-paused"></span><span class="text-yellow-600">Đang dừng ${isRem ? '(Khác)' : ''}</span>`;
-                    } else {
-                        badge = `<span class="status-pulse" style="${isRem ? 'background-color:#f97316' : ''}"></span><span class="${isRem ? 'text-orange-500' : 'text-green-700'}">Đang làm ${isRem ? '(Khác)' : ''}</span>`;
-                    }
-                }
-
-                container.innerHTML += `
-                    <button type="button" onclick="selectEmployee('${emp.id}')" class="w-full text-left p-4 border rounded-lg transition-colors ${isSelected ? 'border-blue-400 bg-blue-50 ring-1' : 'border-gray-200 bg-white hover:bg-gray-50'}">
-                        <div class="flex items-center gap-3">
-                            <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-gray-200">
-                            <div class="flex-1">
-                                <div class="font-bold text-gray-800">${emp.name}</div>
-                                <div class="text-xs text-gray-500">${emp.role}</div>
-                            </div>
-                            <div class="flex items-center gap-2 text-xs font-bold text-gray-500">
-                                ${badge}
-                            </div>
-                        </div>
-                    </button>`;
-            });
-        }
-
-        async function loadEmployeesTable() {
-            const data = await fetchEmployees();
-            const tbody = document.getElementById('empTableBody');
-            tbody.innerHTML = '';
-            data.filter(emp => emp.role !== 'Tổ').forEach(emp => {
-                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
-                const avatar = emp.avatar_url || defaultAvatar;
-                const safeName = emp.name.replace(/'/g, "\\'");
-                
-                tbody.innerHTML += `
-                    <tr class="hover:bg-blue-50 border-b transition-colors">
-                        <td class="p-3"><img src="${avatar}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-200"></td>
-                        <td class="p-3 font-bold text-gray-800">${emp.name}</td>
-                        <td class="p-3"><span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">${emp.role}</span></td>
-                        <td class="p-3 text-gray-600">${emp.hometown || '...'}</td>
-                        <td class="p-3 text-center">
-                            <button onclick="openEditModal('${emp.id}')" class="bg-green-100 text-green-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-green-200 shadow-sm transition-colors cursor-pointer">✏️ Sửa</button>
-                            <button onclick="openHistoryModal('${emp.id}', '${safeName}')" class="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors cursor-pointer ml-2">🕒 Lịch sử</button>
-                            <button onclick="deleteEmployee('${emp.id}')" class="bg-red-100 text-red-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-red-200 shadow-sm transition-colors cursor-pointer ml-2">🗑️ Xóa</button>
-                        </td>
-                    </tr>`;
-            });
-            renderTeamList();
-        }
-
-        async function addEmployee() {
-            let empData = null;
-            try {
-                const name = document.getElementById('empName').value;
-                const role = document.getElementById('empRole').value;
-                const dob = document.getElementById('empDob').value || null;
-                const hometown = document.getElementById('empHometown').value;
-                const joinDate = document.getElementById('empJoinDate').value || null;
-                const fileInput = document.getElementById('empAvatarFile');
-
-                let team_lead_id = null;
-                let team_name = null;
-                await fetchEmployees();
-                loadTeamNamesForSelect();
-
-                if (role === 'Nhân viên' || role === 'Tổ trưởng') {
-                    const select = document.getElementById('empTeamNameSelect');
-                    const selectedTeam = select?.value || '';
-                    if (!selectedTeam) return Swal.fire('Cảnh báo', 'Vui lòng chọn tổ!', 'warning');
-                    team_name = selectedTeam;
-
-                    if (role === 'Tổ trưởng') {
-                        const existingLead = allEmployees.find(e => e.team_name === selectedTeam && e.role === 'Tổ trưởng');
-                        if (existingLead) return Swal.fire('Cảnh báo', `Tổ "${selectedTeam}" đã có tổ trưởng.`, 'warning');
-                    } else {
-                        const teamLead = allEmployees.find(e => e.team_name === selectedTeam && e.role === 'Tổ trưởng');
-                        if (teamLead) team_lead_id = teamLead.id;
-                    }
-                }
-
-                if(!name) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên!', 'warning');
-
-                Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-                let finalAvatarUrl = '';
-                if (fileInput && fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                    const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('avatars').upload(fileName, file);
-                    if (uploadError) throw new Error('Lỗi tải ảnh: ' + uploadError.message);
-                    const { data: publicUrlData } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
-                    finalAvatarUrl = publicUrlData.publicUrl;
-                }
-
-                empData = { name, role, dob, hometown, join_date: joinDate, avatar_url: finalAvatarUrl, team_lead_id, team_name };
-                const res = await fetch(`${API_URL}/employees`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(empData)
-                });
-                if(!res.ok) throw new Error('Backend từ chối kết nối');
-                Swal.fire('Thành công', 'Đã thêm nhân viên', 'success');
-            } catch(error) {
-                if (error.message && error.message.toLowerCase().includes('failed to fetch') && empData) {
-                    const { data: supabaseData, error: supabaseError } = await supabaseClient.from('employees').insert([empData]).select();
-                    if (supabaseError) return Swal.fire('Lỗi Hệ Thống', supabaseError.message, 'error');
-                    Swal.fire('Thành công', 'Đã thêm nhân viên trực tiếp qua Supabase', 'success');
-                } else {
-                    return Swal.fire('Lỗi Hệ Thống', error.message, 'error');
-                }
-            }
-
-            ['empName', 'empRole', 'empDob', 'empHometown', 'empJoinDate', 'empAvatarFile', 'empTeamNameSelect'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
-            updateTeamFields();
-            loadEmployeesTable();
-            loadEmployeesForSelect();
-            renderOrgChart();
-        }
-
-        async function addTeam() {
-            const teamName = document.getElementById('newTeamName').value.trim();
-            if (!teamName) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên tổ!', 'warning');
-            
-            await fetchEmployees();
-            if (allEmployees.some(e => e.team_name === teamName)) return Swal.fire('Cảnh báo', 'Tổ này đã tồn tại!', 'warning');
-
-            let teamData = { name: teamName, role: 'Tổ', team_name: teamName, hometown: '', skills: '', avatar_url: '' };
-            try {
-                Swal.fire({ title: 'Đang tạo tổ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                const res = await fetch(`${API_URL}/employees`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(teamData)
-                });
-                if (!res.ok) throw new Error('Không tạo được tổ');
-                Swal.fire('Thành công', `Đã tạo tổ "${teamName}"`, 'success');
-                document.getElementById('newTeamName').value = '';
-                loadEmployeesTable();
-                loadEmployeesForSelect();
-                renderOrgChart();
-                renderTeamList();
-            } catch (error) {
-                if (error.message && error.message.toLowerCase().includes('failed to fetch')) {
-                    const { error: supabaseError } = await supabaseClient.from('employees').insert([teamData]).select();
-                    if (supabaseError) return Swal.fire('Lỗi', supabaseError.message, 'error');
-                    Swal.fire('Thành công', `Đã tạo tổ "${teamName}" trực tiếp qua Supabase`, 'success');
-                    document.getElementById('newTeamName').value = '';
-                    loadEmployeesTable();
-                    loadEmployeesForSelect();
-                    renderOrgChart();
-                    renderTeamList();
-                    return;
-                }
-                Swal.fire('Lỗi', error.message, 'error');
-            }
-        }
-
-        async function deleteTeam(teamId) {
-            const team = allEmployees.find(e => String(e.id) === String(teamId));
-            const teamName = team ? team.team_name : 'tổ này';
-            const result = await Swal.fire({
-                title: `Xác nhận xóa tổ ${teamName}`, text: 'Nhân viên sẽ về trạng thái chưa gán tổ.',
-                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa Tổ', cancelButtonText: 'Hủy', reverseButtons: true
-            });
-            if (!result.isConfirmed) return;
-
-            try {
-                const teamMembers = allEmployees.filter(e => e.team_name === teamName && e.role !== 'Tổ');
-                for (const member of teamMembers) {
-                    await fetch(`${API_URL}/employees/${member.id}`, {
-                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_lead_id: null, team_name: null })
-                    });
-                }
-                const res = await fetch(`${API_URL}/employees/${teamId}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Không xóa được tổ');
-                Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
-                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
-            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
-        }
-
-        async function deleteTeamByName(teamName) {
-            const result = await Swal.fire({
-                title: `Xác nhận xóa tổ ${teamName}`, text: 'Tổ trưởng và nhân viên sẽ về trạng thái chưa gán tổ.',
-                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa Tổ', cancelButtonText: 'Hủy', reverseButtons: true
-            });
-            if (!result.isConfirmed) return;
-
-            try {
-                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                const membersToUpdate = allEmployees.filter(e => e.team_name === teamName);
-                for (const member of membersToUpdate) {
-                    await fetch(`${API_URL}/employees/${member.id}`, {
-                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_lead_id: null, team_name: null })
-                    });
-                }
-                Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
-                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
-            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
-        }
-
-        async function deleteEmployee(empId) {
-            const emp = allEmployees.find(e => String(e.id) === String(empId));
-            if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
-
-            const result = await Swal.fire({
-                title: `Xác nhận xóa nhân viên`, text: `Bạn có chắc chắn muốn xóa ${emp.name}?`,
-                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', reverseButtons: true
-            });
-            if (!result.isConfirmed) return;
-
-            try {
-                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                const res = await fetch(`${API_URL}/employees/${empId}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Không xóa được nhân viên');
-                Swal.fire('Đã xóa', `${emp.name} đã được xóa.`, 'success');
-                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
-            } catch (error) {
-                if (error.message && error.message.toLowerCase().includes('failed to fetch')) {
-                    try {
-                        await supabaseClient.from('productivity_logs').delete().eq('employee_id', empId);
-                        await supabaseClient.from('employees').delete().eq('id', empId);
-                        Swal.fire('Đã xóa', `${emp.name} đã được xóa trực tiếp qua Supabase.`, 'success');
-                        loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
-                    } catch (supabaseError) { Swal.fire('Lỗi', supabaseError.message, 'error'); }
-                } else { Swal.fire('Lỗi', error.message, 'error'); }
-            }
-        }
-
-        async function openEditModal(empId) {
-            const emp = allEmployees.find(e => String(e.id) === String(empId));
-            if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
-
-            const { value: formValues } = await Swal.fire({
-                title: 'Chỉnh sửa hồ sơ nhân viên',
-                html: `
-                    <div class="text-left">
-                        <label class="block text-sm font-bold mb-1">Họ và Tên:</label>
-                        <input type="text" id="editName" class="w-full border p-2 rounded mb-3" value="${emp.name}">
-                        <label class="block text-sm font-bold mb-1">Vị trí:</label>
-                        <select id="editRole" class="w-full border p-2 rounded mb-3">
-                            <option value="Quản lý" ${emp.role === 'Quản lý' ? 'selected' : ''}>Quản lý</option>
-                            <option value="Tổ trưởng" ${emp.role === 'Tổ trưởng' ? 'selected' : ''}>Tổ trưởng</option>
-                            <option value="Nhân viên" ${emp.role === 'Nhân viên' ? 'selected' : ''}>Nhân viên</option>
-                        </select>
-                        <label class="block text-sm font-bold mb-1">Ngày sinh (dd/mm/yyyy):</label>
-                        <input type="date" id="editDob" class="w-full border p-2 rounded mb-3" value="${emp.dob || ''}">
-                        <label class="block text-sm font-bold mb-1">Quê quán:</label>
-                        <input type="text" id="editHometown" class="w-full border p-2 rounded mb-3" value="${emp.hometown || ''}">
-                        <label class="block text-sm font-bold mb-1">Ngày vào công ty:</label>
-                        <input type="date" id="editJoinDate" class="w-full border p-2 rounded mb-3" value="${emp.join_date || ''}">
-                    </div>
-                `,
-                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Lưu', cancelButtonText: 'Hủy',
-                preConfirm: () => {
-                    const name = document.getElementById('editName').value.trim();
-                    if (!name) { Swal.showValidationMessage('Vui lòng nhập tên nhân viên'); return false; }
-                    return { name, role: document.getElementById('editRole').value, dob: document.getElementById('editDob').value || null, hometown: document.getElementById('editHometown').value, join_date: document.getElementById('editJoinDate').value || null };
-                }
-            });
-            if (formValues) await saveEmployeeChanges(empId, formValues);
-        }
-
-        async function saveEmployeeChanges(empId, updates) {
-            try {
-                Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                const res = await fetch(`${API_URL}/employees/${empId}`, {
-                    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates)
-                });
-                if (!res.ok) throw new Error('Không cập nhật được hồ sơ');
-                Swal.fire('Thành công', 'Hồ sơ nhân viên đã được cập nhật', 'success');
-                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
-            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
-        }
-
-        function renderTeamList() {
-            const container = document.getElementById('teamList');
-            container.innerHTML = '';
-            const teamNames = [...new Set(allEmployees.filter(e => e.team_name).map(e => e.team_name))];
-            if (teamNames.length === 0) {
-                container.innerHTML = '<div class="text-gray-500 italic">Chưa có tổ nào</div>'; return;
-            }
-            teamNames.forEach(teamName => {
-                const teamLead = allEmployees.find(e => e.team_name === teamName && e.role === 'Tổ trưởng');
-                const teamPlaceholder = allEmployees.find(e => e.team_name === teamName && e.role === 'Tổ');
-                const teamMembers = allEmployees.filter(e => e.team_name === teamName && e.role === 'Nhân viên');
-                const teamDiv = document.createElement('div');
-                teamDiv.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded border shadow-sm gap-3';
-                const info = document.createElement('div');
-                info.innerHTML = `<div class="font-bold text-blue-800">${teamName}</div><div class="text-sm text-gray-600">Tổ trưởng: <span class="font-semibold">${teamLead ? teamLead.name : 'Chưa có tổ trưởng'}</span></div><div class="text-sm text-gray-500">Số nhân viên: ${teamMembers.length}</div>`;
-                teamDiv.appendChild(info);
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600';
-                deleteBtn.textContent = '🗑️ Xóa Tổ';
-                deleteBtn.onclick = () => teamPlaceholder ? deleteTeam(teamPlaceholder.id) : deleteTeamByName(teamName);
-                teamDiv.appendChild(deleteBtn);
-                container.appendChild(teamDiv);
-            });
-        }
-
-        // ==========================================
-        // MODULE: SƠ ĐỒ VÀ DASHBOARD 
-        // ==========================================
         async function renderOrgChart() {
             await fetchEmployees();
             const container = document.getElementById('orgContainer');
@@ -1290,115 +1444,393 @@
             container.appendChild(hierarchy);
         }
 
-        function showEmployeeDetails(empDataStr) {
-            const emp = JSON.parse(empDataStr);
-            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
-            const avatar = emp.avatar_url || defaultAvatar;
-            Swal.fire({
-                title: 'Hồ Sơ Nhân Sự',
-                html: `<div class="text-left mt-4"><div class="text-center mb-4"><img src="${avatar}" class="w-24 h-24 rounded-full mx-auto object-cover shadow border"></div><p class="mb-2 border-b pb-1"><strong>👤 Tên:</strong> ${emp.name}</p><p class="mb-2 border-b pb-1"><strong>🏷️ Vị trí:</strong> <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">${emp.role}</span></p><p class="mb-2 border-b pb-1"><strong>🎂 Ngày sinh:</strong> ${emp.dob || 'Chưa cập nhật'}</p><p class="mb-2 border-b pb-1"><strong>📍 Quê quán:</strong> ${emp.hometown || 'Chưa cập nhật'}</p><p class="mb-2"><strong>🛠️ Kỹ năng:</strong> ${emp.skills || 'Chưa cập nhật'}</p></div>`,
-                confirmButtonText: 'Đóng', confirmButtonColor: '#3b82f6'
+        async function loadEmployeesForSelect() {
+            await fetchEmployees();
+            const select = document.getElementById('empSelect');
+            const savedId = select.value; 
+            select.innerHTML = '<option value="">-- Bấm để chọn nhân viên --</option>';
+    
+            const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ');
+            employeesForSelect.forEach(emp => { 
+                const isWorking = Boolean(activeSessions[emp.id]);
+                const isPaused = isWorking && activeSessions[emp.id].isPaused;
+                const isRem = (isWorking && activeSessions[emp.id].isRemote) ? "(Máy khác)" : "";
+                
+                let status = "⚪ Trống";
+                if(isWorking) status = isPaused ? `⏸ ĐANG DỪNG ${isRem}` : `🟢 ĐANG LÀM ${isRem}`;
+                
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.text = `${emp.name} (${emp.role}) - [${status}]`;
+                
+                if(isWorking) {
+                    option.style.fontWeight = "bold";
+                    option.style.color = isPaused ? "#ca8a04" : "#059669";
+                }
+                select.appendChild(option);
             });
+            
+            select.value = savedId;
+            loadTeamNamesForSelect();
+            updateTeamFields();
+            
+            const teamLeadSelect = document.getElementById('empTeamLead');
+            if (teamLeadSelect) {
+                const currentValue = teamLeadSelect.value;
+                teamLeadSelect.innerHTML = '<option value="">-- Tổ trưởng quản lý --</option>';
+                allEmployees.filter(e => e.role && e.role.includes('Tổ trưởng')).forEach(lead => {
+                    const opt = document.createElement('option');
+                    opt.value = lead.id;
+                    opt.text = lead.name;
+                    teamLeadSelect.appendChild(opt);
+                });
+                teamLeadSelect.value = currentValue;
+            }
+            renderEmployeeListInInput();
+            renderGroupCreatorList(); 
         }
 
-        // Khởi tạo Dashboard với lọc ngày mặc định (3 ngày gần nhất)
-        let empChartInstance = null; let dailyChartInstance = null;
-        const endD = new Date();
-        const startD = new Date(); startD.setDate(startD.getDate() - 3);
-        document.getElementById('filterStartDate').valueAsDate = startD;
-        document.getElementById('filterEndDate').valueAsDate = endD;
-        
-        async function loadDashboards() {
-            const fStart = document.getElementById('filterStartDate').value;
-            const fEnd = document.getElementById('filterEndDate').value;
-            
-            let queryParam = '';
-            if(fStart) queryParam += `startDate=${fStart}&`;
-            if(fEnd) queryParam += `endDate=${fEnd}`;
+        function selectEmployee(empId) {
+            currentEmpId = empId;
+            document.getElementById('empSelect').value = empId;
+            handleEmployeeChange();
+            renderEmployeeListInInput();
+        }
 
-            const resEmp = await fetch(`${API_URL}/stats/employees?${queryParam}`);
-            const dataEmp = await resEmp.json();
-            if(empChartInstance) empChartInstance.destroy();
-            empChartInstance = new Chart(document.getElementById('empChart'), { type: 'bar', data: { labels: dataEmp.map(d => d.name), datasets: [{ label: 'Số đơn đóng gói', data: dataEmp.map(d => d.total), backgroundColor: '#3b82f6', borderRadius: 4 }] } });
+        function loadTeamNamesForSelect() {
+            const select = document.getElementById('empTeamNameSelect');
+            if (!select) return;
+            const currentValue = select.value || '';
+            select.innerHTML = '<option value="">-- Chọn tổ --</option>';
             
-            const resDaily = await fetch(`${API_URL}/stats/daily?${queryParam}`);
-            const dataDaily = await resDaily.json();
-            if(dailyChartInstance) dailyChartInstance.destroy();
-            dailyChartInstance = new Chart(document.getElementById('dailyChart'), { type: 'line', data: { labels: dataDaily.map(d => d.work_date), datasets: [{ label: 'Tổng kho theo ngày', data: dataDaily.map(d => d.total_daily_orders), borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3 }] } });
-
-            const resSessions = await fetch(`${API_URL}/stats/sessions?${queryParam}`);
-            globalSessionLogsForDashboard = await resSessions.json();
-            
-            const sessionSelect = document.getElementById('sessionLeaderboardSelect');
-            const currentSelection = sessionSelect.value;
-            sessionSelect.innerHTML = '<option value="">-- Chọn tên ca làm --</option>';
-            
-            const uniqueSessionNames = [...new Set(globalSessionLogsForDashboard.map(log => log.session_name).filter(Boolean))];
-            uniqueSessionNames.forEach(sn => {
+            const teamNames = [...new Set(allEmployees.filter(e => e.team_name).map(e => e.team_name))];
+            teamNames.forEach(teamName => {
                 const opt = document.createElement('option');
-                opt.value = sn; opt.text = sn;
-                sessionSelect.appendChild(opt);
+                opt.value = teamName;
+                opt.text = teamName;
+                select.appendChild(opt);
             });
-            if(uniqueSessionNames.includes(currentSelection)) sessionSelect.value = currentSelection;
-            renderSessionLeaderboard();
+            select.value = currentValue;
         }
 
-        function renderSessionLeaderboard() {
-            const container = document.getElementById('sessionLeaderboardContainer');
-            const selectedSession = document.getElementById('sessionLeaderboardSelect').value;
+        function updateTeamFields() {
+            const role = document.getElementById('empRole')?.value;
+            const teamSection = document.getElementById('teamSection');
+            if (!teamSection) return;
             
-            if(!selectedSession) {
-                container.innerHTML = '<div class="col-span-full text-center text-gray-500 italic py-4">Vui lòng chọn tên ca để phân tích tốc độ.</div>';
-                return;
+            if (role === 'Nhân viên' || role === 'Tổ trưởng') {
+                teamSection.style.display = 'block';
+                loadTeamNamesForSelect();
+            } else {
+                teamSection.style.display = 'none';
             }
+        }
 
-            const logsInSession = globalSessionLogsForDashboard.filter(log => log.session_name === selectedSession && log.employees);
-            const empStats = {};
-            
-            logsInSession.forEach(log => {
-                const empName = log.employees.name;
-                if(!empStats[empName]) empStats[empName] = { name: empName, totalOrders: 0, totalSeconds: 0 };
-                empStats[empName].totalOrders += log.total_orders;
-                empStats[empName].totalSeconds += log.total_time_seconds;
-            });
-
-            const rankingList = Object.values(empStats).map(stat => {
-                let avg = 0;
-                if(stat.totalOrders > 0) avg = (stat.totalSeconds / stat.totalOrders).toFixed(1);
-                return { ...stat, avgSpeed: parseFloat(avg) };
-            });
-
-            const validRanking = rankingList.filter(e => e.totalOrders > 0).sort((a, b) => a.avgSpeed - b.avgSpeed);
-
-            if(validRanking.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center text-red-500 italic py-4">Chưa có ai đóng đơn nào trong ca này ở khoảng thời gian trên!</div>';
-                return;
-            }
-
+        function renderEmployeeListInInput() {
+            const container = document.getElementById('employeeList');
+            if (!container) return;
             container.innerHTML = '';
-            validRanking.forEach((emp, index) => {
-                let crown = ''; let bg = 'bg-white'; let border = 'border-gray-200';
-                if(index === 0) { crown = '🥇'; bg = 'bg-yellow-50'; border = 'border-yellow-400'; }
-                else if(index === 1) { crown = '🥈'; bg = 'bg-gray-100'; border = 'border-gray-400'; }
-                else if(index === 2) { crown = '🥉'; bg = 'bg-orange-50'; border = 'border-orange-300'; }
-                else { crown = `#${index + 1}`; }
+
+            allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
+                const isWorking = Boolean(activeSessions[emp.id]);
+                const isPaused = isWorking && activeSessions[emp.id].isPaused;
+                const isRem = (isWorking && activeSessions[emp.id].isRemote);
+                const isSelected = String(currentEmpId) === String(emp.id);
+                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
+                const avatar = emp.avatar_url || defaultAvatar;
+                
+                let badge = '<span>Rảnh</span>';
+                if(isWorking) {
+                    if(isPaused) {
+                        badge = `<span class="status-paused"></span><span class="text-yellow-600">Đang dừng ${isRem ? '(Khác)' : ''}</span>`;
+                    } else {
+                        badge = `<span class="status-pulse" style="${isRem ? 'background-color:#f97316' : ''}"></span><span class="${isRem ? 'text-orange-500' : 'text-green-700'}">Đang làm ${isRem ? '(Khác)' : ''}</span>`;
+                    }
+                }
 
                 container.innerHTML += `
-                    <div class="p-4 rounded-xl border ${border} ${bg} shadow-sm relative overflow-hidden transition-transform hover:scale-105">
-                        <div class="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">Tổng: ${emp.totalOrders} đơn</div>
-                        <div class="text-2xl mb-1">${crown}</div>
-                        <div class="font-bold text-gray-800 text-lg line-clamp-1" title="${emp.name}">${emp.name}</div>
-                        <div class="mt-2 text-red-600 font-black text-xl">${emp.avgSpeed} <span class="text-sm font-medium text-gray-500">giây / đơn</span></div>
-                    </div>
-                `;
+                    <button type="button" onclick="selectEmployee('${emp.id}')" class="w-full text-left p-4 border rounded-lg transition-colors ${isSelected ? 'border-blue-400 bg-blue-50 ring-1' : 'border-gray-200 bg-white hover:bg-gray-50'}">
+                        <div class="flex items-center gap-3">
+                            <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-gray-200">
+                            <div class="flex-1">
+                                <div class="font-bold text-gray-800">${emp.name}</div>
+                                <div class="text-xs text-gray-500">${emp.role}</div>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs font-bold text-gray-500">
+                                ${badge}
+                            </div>
+                        </div>
+                    </button>`;
             });
         }
 
-        // Init App
+        async function loadEmployeesTable() {
+            const data = await fetchEmployees();
+            const tbody = document.getElementById('empTableBody');
+            tbody.innerHTML = '';
+            data.filter(emp => emp.role !== 'Tổ').forEach(emp => {
+                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
+                const avatar = emp.avatar_url || defaultAvatar;
+                const safeName = emp.name.replace(/'/g, "\\'");
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-blue-50 border-b transition-colors">
+                        <td class="p-3"><img src="${avatar}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-200"></td>
+                        <td class="p-3 font-bold text-gray-800">${emp.name}</td>
+                        <td class="p-3"><span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">${emp.role}</span></td>
+                        <td class="p-3 text-gray-600">${emp.hometown || '...'}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="openEditModal('${emp.id}')" class="bg-green-100 text-green-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-green-200 shadow-sm transition-colors cursor-pointer">✏️ Sửa</button>
+                            <button onclick="openHistoryModal('${emp.id}', '${safeName}')" class="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors cursor-pointer ml-2">🕒 Lịch sử</button>
+                            <button onclick="deleteEmployee('${emp.id}')" class="bg-red-100 text-red-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-red-200 shadow-sm transition-colors cursor-pointer ml-2">🗑️ Xóa</button>
+                        </td>
+                    </tr>`;
+            });
+            renderTeamList();
+        }
+
+        async function addEmployee() {
+            try {
+                const name = document.getElementById('empName').value;
+                const role = document.getElementById('empRole').value;
+                const dob = document.getElementById('empDob').value || null;
+                const hometown = document.getElementById('empHometown').value;
+                const joinDate = document.getElementById('empJoinDate').value || null;
+                const fileInput = document.getElementById('empAvatarFile');
+
+                let team_lead_id = null;
+                let team_name = null;
+                await fetchEmployees();
+                loadTeamNamesForSelect();
+
+                if (role === 'Nhân viên' || role === 'Tổ trưởng') {
+                    const select = document.getElementById('empTeamNameSelect');
+                    const selectedTeam = select?.value || '';
+                    if (!selectedTeam) return Swal.fire('Cảnh báo', 'Vui lòng chọn tổ!', 'warning');
+                    team_name = selectedTeam;
+
+                    if (role === 'Tổ trưởng') {
+                        const existingLead = allEmployees.find(e => e.team_name === selectedTeam && e.role === 'Tổ trưởng');
+                        if (existingLead) return Swal.fire('Cảnh báo', `Tổ "${selectedTeam}" đã có tổ trưởng.`, 'warning');
+                    } else {
+                        const teamLead = allEmployees.find(e => e.team_name === selectedTeam && e.role === 'Tổ trưởng');
+                        if (teamLead) team_lead_id = teamLead.id;
+                    }
+                }
+
+                if(!name) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên!', 'warning');
+
+                Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                let finalAvatarUrl = '';
+                if (fileInput && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('avatars').upload(fileName, file);
+                    if (uploadError) throw new Error('Lỗi tải ảnh: ' + uploadError.message);
+                    const { data: publicUrlData } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+                    finalAvatarUrl = publicUrlData.publicUrl;
+                }
+
+                const empData = { name, role, dob, hometown, join_date: joinDate, avatar_url: finalAvatarUrl, team_lead_id, team_name };
+                
+                const { error } = await supabaseClient.from('employees').insert([empData]);
+                if (error) throw error;
+                
+                Swal.fire('Thành công', 'Đã thêm nhân viên', 'success');
+            } catch(error) {
+                return Swal.fire('Lỗi Hệ Thống', error.message, 'error');
+            }
+
+            ['empName', 'empRole', 'empDob', 'empHometown', 'empJoinDate', 'empAvatarFile', 'empTeamNameSelect'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            updateTeamFields();
+            loadEmployeesTable();
+            loadEmployeesForSelect();
+            renderOrgChart();
+        }
+
+        async function addTeam() {
+            const teamName = document.getElementById('newTeamName').value.trim();
+            if (!teamName) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên tổ!', 'warning');
+            
+            await fetchEmployees();
+            if (allEmployees.some(e => e.team_name === teamName)) return Swal.fire('Cảnh báo', 'Tổ này đã tồn tại!', 'warning');
+
+            let teamData = { name: teamName, role: 'Tổ', team_name: teamName, hometown: '', skills: '', avatar_url: '' };
+            try {
+                Swal.fire({ title: 'Đang tạo tổ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                const { error } = await supabaseClient.from('employees').insert([teamData]);
+                if(error) throw error;
+                
+                Swal.fire('Thành công', `Đã tạo tổ "${teamName}"`, 'success');
+                document.getElementById('newTeamName').value = '';
+                loadEmployeesTable();
+                loadEmployeesForSelect();
+                renderOrgChart();
+                renderTeamList();
+            } catch (error) {
+                Swal.fire('Lỗi', error.message, 'error');
+            }
+        }
+
+        async function deleteTeam(teamId) {
+            const team = allEmployees.find(e => String(e.id) === String(teamId));
+            const teamName = team ? team.team_name : 'tổ này';
+            const result = await Swal.fire({
+                title: `Xác nhận xóa tổ ${teamName}`, text: 'Nhân viên sẽ về trạng thái chưa gán tổ.',
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa Tổ', cancelButtonText: 'Hủy', reverseButtons: true
+            });
+            if (!result.isConfirmed) return;
+
+            try {
+                const teamMembers = allEmployees.filter(e => e.team_name === teamName && e.role !== 'Tổ');
+                for (const member of teamMembers) {
+                    await supabaseClient.from('employees').update({ team_lead_id: null, team_name: null }).eq('id', member.id);
+                }
+                const { error } = await supabaseClient.from('employees').delete().eq('id', teamId);
+                if (error) throw error;
+                
+                Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
+                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
+            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
+        }
+
+        async function deleteTeamByName(teamName) {
+            const result = await Swal.fire({
+                title: `Xác nhận xóa tổ ${teamName}`, text: 'Tổ trưởng và nhân viên sẽ về trạng thái chưa gán tổ.',
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa Tổ', cancelButtonText: 'Hủy', reverseButtons: true
+            });
+            if (!result.isConfirmed) return;
+
+            try {
+                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                const membersToUpdate = allEmployees.filter(e => e.team_name === teamName);
+                for (const member of membersToUpdate) {
+                    await supabaseClient.from('employees').update({ team_lead_id: null, team_name: null }).eq('id', member.id);
+                }
+                Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
+                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
+            } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
+        }
+
+        async function deleteEmployee(empId) {
+            const emp = allEmployees.find(e => String(e.id) === String(empId));
+            if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
+
+            const result = await Swal.fire({
+                title: `Xác nhận xóa nhân viên`, text: `Bạn có chắc chắn muốn xóa ${emp.name}?`,
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', reverseButtons: true
+            });
+            if (!result.isConfirmed) return;
+
+            try {
+                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                await supabaseClient.from('productivity_logs').delete().eq('employee_id', empId);
+                const { error } = await supabaseClient.from('employees').delete().eq('id', empId);
+                if(error) throw error;
+                
+                Swal.fire('Đã xóa', `${emp.name} đã được xóa.`, 'success');
+                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
+            } catch (error) {
+                Swal.fire('Lỗi', error.message, 'error');
+            }
+        }
+
+        async function openEditModal(empId) {
+            const emp = allEmployees.find(e => String(e.id) === String(empId));
+            if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Chỉnh sửa hồ sơ',
+                html: `
+                    <div class="text-left">
+                        <label class="block text-sm font-bold mb-1">Họ và Tên:</label>
+                        <input type="text" id="editName" class="w-full border p-2 rounded mb-3" value="${emp.name}">
+                        
+                        <label class="block text-sm font-bold mb-1">Vị trí:</label>
+                        <select id="editRole" class="w-full border p-2 rounded mb-3">
+                            <option value="Quản lý" ${emp.role === 'Quản lý' ? 'selected' : ''}>Quản lý</option>
+                            <option value="Tổ trưởng" ${emp.role === 'Tổ trưởng' ? 'selected' : ''}>Tổ trưởng</option>
+                            <option value="Nhân viên" ${emp.role === 'Nhân viên' ? 'selected' : ''}>Nhân viên</option>
+                        </select>
+                        
+                        <label class="block text-sm font-bold mb-1 text-blue-700">Đổi ảnh đại diện (Để trống nếu giữ nguyên):</label>
+                        <input type="file" id="editAvatarFile" accept="image/*" class="w-full border p-1 rounded mb-3 bg-gray-50 text-sm">
+                        
+                        <label class="block text-sm font-bold mb-1">Ngày sinh (dd/mm/yyyy):</label>
+                        <input type="date" id="editDob" class="w-full border p-2 rounded mb-3" value="${emp.dob || ''}">
+                        
+                        <label class="block text-sm font-bold mb-1">Quê quán:</label>
+                        <input type="text" id="editHometown" class="w-full border p-2 rounded mb-3" value="${emp.hometown || ''}">
+                        
+                        <label class="block text-sm font-bold mb-1">Ngày vào công ty:</label>
+                        <input type="date" id="editJoinDate" class="w-full border p-2 rounded mb-3" value="${emp.join_date || ''}">
+                    </div>
+                `,
+                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Lưu Cập Nhật', cancelButtonText: 'Hủy',
+                preConfirm: () => {
+                    const name = document.getElementById('editName').value.trim();
+                    if (!name) { Swal.showValidationMessage('Vui lòng nhập tên nhân viên'); return false; }
+                    
+                    const fileInput = document.getElementById('editAvatarFile');
+                    let file = null;
+                    if(fileInput.files.length > 0) file = fileInput.files[0];
+
+                    return { 
+                        name, 
+                        role: document.getElementById('editRole').value, 
+                        dob: document.getElementById('editDob').value || null, 
+                        hometown: document.getElementById('editHometown').value, 
+                        join_date: document.getElementById('editJoinDate').value || null,
+                        file: file
+                    };
+                }
+            });
+            
+            if (formValues) {
+                try {
+                    Swal.fire({ title: 'Đang cập nhật...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                    
+                    let avatarUrl = null;
+                    if (formValues.file) {
+                        const fileExt = formValues.file.name.split('.').pop();
+                        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                        const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('avatars').upload(fileName, formValues.file);
+                        if (uploadError) throw new Error('Lỗi tải ảnh: ' + uploadError.message);
+                        const { data: publicUrlData } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+                        avatarUrl = publicUrlData.publicUrl;
+                    }
+
+                    const updates = {
+                        name: formValues.name,
+                        role: formValues.role,
+                        dob: formValues.dob,
+                        hometown: formValues.hometown,
+                        join_date: formValues.join_date
+                    };
+                    if(avatarUrl) updates.avatar_url = avatarUrl;
+
+                    const { error } = await supabaseClient.from('employees').update(updates).eq('id', empId);
+                    if(error) throw error;
+                    
+                    Swal.fire('Thành công', 'Hồ sơ nhân viên đã được cập nhật', 'success');
+                    loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
+                } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
+            }
+        }
+
+        // Khởi chạy App
         (async () => {
             await loadEmployeesForSelect();
             updateTeamFields();
+            fetchDailyTop();
         })();
+        
+        setInterval(fetchDailyTop, 15000);
 
     </script>
 </body>
