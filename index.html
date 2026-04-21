@@ -597,7 +597,8 @@
                         }
                         else if(srv && loc && loc.isRemote) {
                             if(loc.orderCount !== srv.orderCount || loc.isPaused !== srv.isPaused || loc.accTime !== srv.accumulatedTime) {
-                                loc.orderCount = srv.orderCount; loc.isPaused = srv.isPaused; loc.accTime = srv.accumulatedTime;
+                                if (!loc.manualCount) loc.orderCount = srv.orderCount;
+                                loc.isPaused = srv.isPaused; loc.accTime = srv.accumulatedTime;
                                 if(srv.startTime) loc.startTime = new Date(srv.startTime);
                                 needsRenderGrp = true;
                             }
@@ -1309,6 +1310,7 @@
                 let btnEndClass = isBtnDisabled ? 'bg-gray-400 cursor-not-allowed opacity-70 text-white px-5 py-2.5 rounded-lg font-bold shadow-md w-full md:w-auto flex-shrink-0' : 'bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto flex-shrink-0';
 
                 let textareaDisabled = (grp.isPaused || grp.isRemote) ? 'disabled' : '';
+                let manualDisabled = (grp.isPaused || (grp.isRemote && !isAdminAuthenticated)) ? 'disabled' : '';
                 let textareaPlaceholder = grp.isRemote ? '🔒 Nhóm đang chạy trên MÁY KHÁC...' : (grp.isPaused ? 'Nhóm đang tạm dừng nghỉ ngơi...' : 'Dán mã vận đơn của cả nhóm vào đây...');
                 let statusDot = grp.isPaused ? '<span class="status-paused w-3 h-3"></span>' : '<span class="status-pulse w-3 h-3"></span>';
 
@@ -1335,9 +1337,9 @@
                                 </div>
                                 <div class="flex items-center gap-3 bg-orange-50 border-2 border-orange-200 rounded-xl p-3">
                                     <div class="text-xs font-bold text-orange-700 uppercase tracking-wide whitespace-nowrap">✏️ Cách 2: Nhập số lượng</div>
-                                    <input type="number" id="manualCount_${groupId}" min="0" placeholder="0" value="${totalOrders > 0 && !grp.codes ? totalOrders : ''}"
+                                    <input type="number" id="manualCount_${groupId}" min="0" placeholder="0" value="${grp.manualCount > 0 ? grp.manualCount : (totalOrders > 0 && !grp.codes ? totalOrders : '')}"
                                         oninput="updateManualCount('${groupId}', this.value)"
-                                        ${textareaDisabled}
+                                        ${manualDisabled}
                                         class="w-28 border-2 border-orange-300 p-2 rounded-lg font-black text-orange-700 text-center text-xl focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
                                     <span class="text-sm font-bold text-orange-600">đơn <span class="text-gray-400 font-normal">(nếu không dán mã)</span></span>
                                 </div>
@@ -1439,7 +1441,8 @@
             const codesCount = [...new Set((grp.codes||'').split('\n').map(c => c.trim()).filter(c => c !== ''))].length;
             const manualEl = document.getElementById(`manualCount_${groupId}`);
             const manualNum = manualEl ? (parseInt(manualEl.value) || 0) : (grp.manualCount || 0);
-            const total_orders = grp.isRemote ? grp.orderCount : (codesCount > 0 ? codesCount : manualNum);
+            const remoteOrders = Number(grp.orderCount) || 0;
+            const total_orders = grp.isRemote ? (remoteOrders > 0 ? remoteOrders : manualNum) : (codesCount > 0 ? codesCount : manualNum);
             const order_codes_str = codesCount > 0 ? [...new Set((grp.codes||'').split('\n').map(c=>c.trim()).filter(c=>c!==''))].join(', ') : `NHAP_TAY:${manualNum}`;
 
             if (total_orders === 0) {
@@ -1490,39 +1493,48 @@
                 confirmButtonColor: '#dc2626'
             }).then(async (result) => {
                 if (result.isConfirmed) {
+                    if (!grp.members || grp.members.length === 0) {
+                        return Swal.fire('Lỗi', 'Không tìm thấy danh sách thành viên nhóm. Vui lòng tải lại trang và thử lại.', 'error');
+                    }
+
                     Swal.fire({ title: 'Đang chia đơn...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
+                    const effectiveStartTime = start_time_string || end_time;
                     const logsArray = grp.members.map(empId => ({
-                        employee_id: empId, work_date, start_time: start_time_string, end_time, 
-                        total_orders: Number(countPerPerson), total_time_seconds: Number(totalSeconds), 
+                        employee_id: empId, work_date, start_time: effectiveStartTime, end_time,
+                        total_orders: Number(countPerPerson), total_time_seconds: Number(totalSeconds),
                         average_time_per_order: 0, total_value: Number(total_value_per_person), coefficient: Number(coeff),
                         session_name: `[NHÓM] ${sessionName}`, order_codes: order_codes_str
                     }));
 
                     const successHtmlGroup = `<div class="text-left"><p class="mb-2"><strong>👥 Nhóm:</strong> ${sessionName}</p><p class="mb-2"><strong>📦 Tổng nhóm đóng:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>📈 Đã chia:</strong> ~${countPerPerson} đơn / người</p><p class="mb-2"><strong>🏆 KPI Giá trị:</strong> ${total_value_per_person} điểm/người</p></div>`;
 
-                    try {
-                        const res = await fetch(`${API_URL}/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logsArray) });
-                        if (!res.ok) throw new Error('Lỗi máy chủ');
-
-                        Swal.fire({ title: 'Thành công', icon: 'success', html: successHtmlGroup });
+                    const finishGroup = () => {
                         fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
-                        
                         delete activeGroupSessions[groupId];
                         renderActiveGroups();
                         saveLocalState();
-                        fetchDailyTop(); 
+                        fetchDailyTop();
+                    };
+
+                    try {
+                        const res = await fetch(`${API_URL}/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logsArray) });
+                        if (!res.ok) {
+                            const errData = await res.json().catch(() => ({}));
+                            throw new Error(errData.error || `HTTP ${res.status}`);
+                        }
+                        Swal.fire({ title: 'Thành công', icon: 'success', html: successHtmlGroup });
+                        finishGroup();
                     } catch (e) {
                         try {
                             const { error } = await supabaseClient.from('productivity_logs').insert(logsArray);
                             if (error) throw error;
                             Swal.fire({ title: 'Thành công (DB Trực tiếp)', icon: 'success', html: successHtmlGroup });
-                            fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
-                            delete activeGroupSessions[groupId];
-                            renderActiveGroups();
-                            saveLocalState();
-                            fetchDailyTop();
-                        } catch(err) { Swal.fire('Lỗi nghiêm trọng', 'Không thể lưu vào CSDL', 'error'); }
+                            finishGroup();
+                        } catch(err) {
+                            const errMsg = err?.message || err?.details || JSON.stringify(err) || 'Lỗi không xác định';
+                            Swal.fire('Lỗi nghiêm trọng', `Không thể lưu vào CSDL: ${errMsg}`, 'error');
+                        }
                     }
                 }
             });
@@ -1616,7 +1628,7 @@
                 const resDaily = await fetch(`${API_URL}/stats/daily?${queryParam}`);
                 dataDaily = await resDaily.json();
             } catch(e) {
-                let query = supabaseClient.from('productivity_logs').select('total_orders, session_name, work_date, employees(name)').limit(3000);
+                let query = supabaseClient.from('productivity_logs').select('total_orders, session_name, work_date, employees(name)').limit(20000);
                 if (fStart) query = query.gte('work_date', fStart);
                 if (fEnd) query = query.lte('work_date', fEnd);
                 const { data, error } = await query;
@@ -1687,7 +1699,7 @@
                 if(!res.ok) throw new Error();
                 logs = await res.json();
             } catch(e) {
-                let query = supabaseClient.from('productivity_logs').select('session_name, total_orders, total_time_seconds, employees(name)').limit(3000);
+                let query = supabaseClient.from('productivity_logs').select('session_name, total_orders, total_time_seconds, employees(name)').limit(20000);
                 if(fStart) query = query.gte('work_date', fStart);
                 if(fEnd) query = query.lte('work_date', fEnd);
                 const { data, error } = await query;
@@ -1765,7 +1777,7 @@
                 dataInd = data.individual;
                 dataGrp = data.group;
             } catch(e) {
-                let query = supabaseClient.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)').limit(3000);
+                let query = supabaseClient.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)').limit(20000);
                 if (fStart) query = query.gte('work_date', fStart);
                 if (fEnd) query = query.lte('work_date', fEnd);
                 const { data, error } = await query;
