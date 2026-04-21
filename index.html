@@ -159,13 +159,15 @@
                     </div>
                     <div class="flex flex-col justify-center bg-white p-5 rounded-lg border border-indigo-100 shadow-sm">
                         <label class="block text-sm font-bold mb-1 text-indigo-800">2. Chọn Ca & Hệ số Nhóm (Bắt buộc):</label>
-                        <div class="flex gap-2 w-full mb-6 mt-2">
+                        <div class="flex gap-2 w-full mb-2 mt-2">
                             <select id="newGroupSessionSelect" class="flex-1 border-2 border-indigo-300 p-3 rounded-lg font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50/50">
                                 <option value="">-- Chọn ca làm --</option>
                             </select>
                             <input type="number" id="newGroupCoefficient" placeholder="Hệ số (VD: 8)" class="w-24 border-2 border-red-300 p-3 rounded-lg font-bold text-red-600 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 text-center" step="0.1" min="0.1">
-                            <button onclick="addNewShift('group')" class="bg-indigo-600 text-white px-3 py-2.5 rounded-lg font-bold hover:bg-indigo-700 shadow transition-colors whitespace-nowrap">+ Thêm</button>
-                            <button onclick="deleteShift('group')" class="bg-red-500 text-white px-3 py-2.5 rounded-lg font-bold hover:bg-red-600 shadow transition-colors whitespace-nowrap">🗑 Xóa</button>
+                        </div>
+                        <div class="flex gap-2 w-full mb-4">
+                            <button onclick="addNewShift('group')" class="flex-1 bg-indigo-600 text-white px-3 py-2 rounded-lg font-bold hover:bg-indigo-700 shadow transition-colors whitespace-nowrap">+ Thêm Ca</button>
+                            <button onclick="deleteShift('group')" class="flex-1 bg-red-500 text-white px-3 py-2 rounded-lg font-bold hover:bg-red-600 shadow transition-colors whitespace-nowrap">🗑 Xóa Ca</button>
                         </div>
                         <button onclick="startCreatedGroup()" class="w-full bg-green-600 text-white py-4 rounded-lg font-black shadow-lg hover:bg-green-700 transition text-lg uppercase tracking-wide">🚀 Khởi Động Nhóm</button>
                     </div>
@@ -262,7 +264,7 @@
             <div class="bg-white p-6 rounded-2xl border border-blue-200 shadow-lg">
                 <h3 class="font-bold text-lg mb-4 text-blue-900 border-b border-blue-100 pb-2 flex items-center gap-2">🏁 Xếp hạng tốc độ theo Ca (Giây/Đơn — Từ nhanh nhất)</h3>
                 <div class="flex gap-3 mb-5">
-                    <select id="sessionRankSelect_Ind" onchange="loadSessionRanking('individual')" class="flex-1 border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="sessionRankSelect_Ind" onchange="loadSessionRanking('individual')" class="flex-1 border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-50">
                         <option value="">-- Chọn ca để xem xếp hạng tốc độ --</option>
                     </select>
                 </div>
@@ -372,28 +374,71 @@
                 </div>
             </div>
             <div class="bg-gray-100 p-6 flex justify-between items-center border-t border-gray-200 rounded-b-2xl">
-                <div class="text-gray-500 font-medium text-sm">💡 Giá trị = Số lượng x Hệ số. Dữ liệu cũ rỗng hệ số được tính là x1.</div>
+                <div class="text-gray-500 font-medium text-sm">💡 Dữ liệu cũ (chưa có hệ số) được tự động quy đổi thành x1.</div>
                 <div class="text-right text-xl font-black text-blue-900 bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-200" id="historyTotalOrders">Tổng: 0 đơn</div>
             </div>
         </div>
     </div>
 
     <script>
-        // BÁC THAY 127.0.0.1 BẰNG IP CỦA BÁC HOẶC LINK RENDER NHÉ!
         const API_URL = 'https://backend-kho.onrender.com/api';
 
-        // ĐỔI 2 GIÁ TRỊ NÀY BẰNG SUPABASE URL VÀ ANON KEY CỦA BÁC
         const SUPABASE_URL = 'https://ssvniazffehszaazxcdz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_lzKyn9vzBAGSzWLbXVwnnQ_gzfA7DOb';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let allEmployees = [];
         let allIndShifts = [];
         let allGrpShifts = [];
+        let shiftsRealtimeSubscribed = false;
         let activeSessions = {}; 
         let activeGroupSessions = {}; 
         let currentEmpId = null;
         let tempGroupSelection = []; 
+        let currentHistoryLogs = []; 
+
+        // ==========================================
+        // BẢO HIỂM CHỐNG MẤT DỮ LIỆU KHI BẤM F5 (LOCAL STORAGE)
+        // ==========================================
+        function saveLocalState() {
+            const state = { ind: {}, grp: {}, currentEmpId: currentEmpId };
+            for (let id in activeSessions) {
+                if (!activeSessions[id].isRemote) state.ind[id] = activeSessions[id];
+            }
+            for (let id in activeGroupSessions) {
+                if (!activeGroupSessions[id].isRemote) state.grp[id] = activeGroupSessions[id];
+            }
+            localStorage.setItem('ACBT_STATE', JSON.stringify(state));
+        }
+
+        function restoreLocalState() {
+            try {
+                const saved = localStorage.getItem('ACBT_STATE');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    for (let id in state.ind) {
+                        state.ind[id].startTime = state.ind[id].startTime ? new Date(state.ind[id].startTime) : null;
+                        state.ind[id].originalStartTime = state.ind[id].originalStartTime ? new Date(state.ind[id].originalStartTime) : null;
+                        activeSessions[id] = state.ind[id];
+                    }
+                    for (let id in state.grp) {
+                        state.grp[id].startTime = state.grp[id].startTime ? new Date(state.grp[id].startTime) : null;
+                        state.grp[id].originalStartTime = state.grp[id].originalStartTime ? new Date(state.grp[id].originalStartTime) : null;
+                        activeGroupSessions[id] = state.grp[id];
+                    }
+                    if(state.currentEmpId) {
+                        setTimeout(() => {
+                            const sel = document.getElementById('empSelect');
+                            if(sel) { 
+                                sel.value = state.currentEmpId; 
+                                handleEmployeeChange(); 
+                            }
+                        }, 800);
+                    }
+                }
+            } catch(e) {}
+        }
+
 
         function getLocalDateString(dateStrOrObj) {
             const date = dateStrOrObj ? new Date(dateStrOrObj) : new Date();
@@ -404,11 +449,11 @@
         // ==========================================
         // 0. QUẢN LÝ QUYỀN LỰC
         // ==========================================
-        const MANAGER_PIN  = '8888';           // Quản lý: xem Hồ Sơ, Dashboard
-        const ADMIN_PIN    = 'luongdkz2000';   // Quản trị viên: xóa ca, kết thúc ca máy khác
+        const MANAGER_PIN  = '8888';           
+        const ADMIN_PIN    = 'luongdkz2000';   
 
-        let isManagerAuthenticated = false;    // true khi nhập 8888 hoặc luongdkz2000
-        let isAdminAuthenticated   = false;    // true CHỈ khi nhập luongdkz2000
+        let isManagerAuthenticated = false;    
+        let isAdminAuthenticated   = false;    
 
         function checkAdminUI() {
             const badge  = document.getElementById('adminOverrideBadge');
@@ -526,9 +571,15 @@
                                 needsHandleChange = true; needsRenderInd = true;
                             }
                         }
-                        else if (!srv && loc) {
+                        else if (!srv && loc && loc.isRemote) {
                             delete activeSessions[emp.id];
                             needsRenderInd = true; needsHandleChange = true;
+                        }
+                        else if (!srv && loc && !loc.isRemote) {
+                            fetch(`${API_URL}/active-sessions`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ employeeId: emp.id, action: 'start', sessionData: { sessionName: loc.sessionName, startTime: loc.startTime, orderCount: loc.orderCount, isPaused: loc.isPaused, accumulatedTime: loc.accumulatedTime, coefficient: loc.coefficient } })
+                            }).catch(()=>{});
                         }
                     }
 
@@ -558,6 +609,13 @@
                             delete activeGroupSessions[gid];
                             needsRenderGrp = true;
                         }
+                        else if(!srvGrp[gid] && activeGroupSessions[gid] && !activeGroupSessions[gid].isRemote) {
+                            const loc = activeGroupSessions[gid];
+                            fetch(`${API_URL}/active-sessions`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ employeeId: 'GROUP_' + gid, action: 'start', sessionData: { sessionName: loc.name, coefficient: loc.coefficient, startTime: loc.startTime, isPaused: loc.isPaused, accumulatedTime: loc.accTime, orderCount: loc.orderCount, members: loc.members } })
+                            }).catch(()=>{});
+                        }
                     }
 
                     if (needsRenderInd) renderEmployeeListInInput();
@@ -568,27 +626,61 @@
                     }
                 }
             } catch (e) {}
-        }, 2000);
+        }, 10000);
 
         // ==========================================
-        // MODULE: QUẢN LÝ TÊN CA (SHIFTS)
+        // MODULE: QUẢN LÝ TÊN CA (SHIFTS) - CÓ LƯU BỘ NHỚ CHỐNG F5
         // ==========================================
+        function saveLocalShifts() {
+            localStorage.setItem('ACBT_SHIFTS', JSON.stringify({ ind: allIndShifts, grp: allGrpShifts }));
+        }
+
         async function fetchShifts() {
+            // Luôn đọc từ Supabase để đồng bộ mọi máy
             try {
-                const [resInd, resGrp] = await Promise.all([
-                    fetch(`${API_URL}/shifts?type=individual`),
-                    fetch(`${API_URL}/shifts?type=group`)
-                ]);
-                if(resInd.ok) allIndShifts = await resInd.json();
-                if(resGrp.ok) allGrpShifts = await resGrp.json();
-            } catch(e) {
-                const { data } = await supabaseClient.from('shifts').select('name, type').order('id', { ascending: true });
-                if(data) {
-                    allIndShifts = data.filter(s => s.type === 'individual').map(s => s.name);
-                    allGrpShifts = data.filter(s => s.type === 'group').map(s => s.name);
+                const { data, error } = await supabaseClient.from('shifts').select('name, type').order('name');
+                if (!error && data) {
+                    allIndShifts = data.filter(r => r.type === 'individual').map(r => r.name);
+                    allGrpShifts = data.filter(r => r.type === 'group').map(r => r.name);
                 }
+            } catch(e) {
+                // Fallback localStorage nếu mất mạng
+                try {
+                    const saved = localStorage.getItem('ACBT_SHIFTS');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed.ind)) allIndShifts = parsed.ind;
+                        if (Array.isArray(parsed.grp)) allGrpShifts = parsed.grp;
+                    }
+                } catch(err) {}
             }
+
+            if (allIndShifts.length === 0) allIndShifts = ["Xử lý hàng hoàn", "Đóng hộp 1", "Đóng hộp 8"];
+            if (allGrpShifts.length === 0) allGrpShifts = ["Xử lý hàng hoàn", "Đóng hộp 1", "Đóng hộp 8"];
+
+            saveLocalShifts();
             renderShiftSelects();
+        }
+
+        function subscribeShiftsRealtime() {
+            if (shiftsRealtimeSubscribed) return;
+            shiftsRealtimeSubscribed = true;
+            supabaseClient.channel('shifts-sync')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'shifts' }, (payload) => {
+                    const { name, type } = payload.new;
+                    if (type === 'individual' && !allIndShifts.includes(name)) allIndShifts.push(name);
+                    if (type === 'group' && !allGrpShifts.includes(name)) allGrpShifts.push(name);
+                    saveLocalShifts();
+                    renderShiftSelects();
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'shifts' }, (payload) => {
+                    const { name, type } = payload.old;
+                    if (type === 'individual') allIndShifts = allIndShifts.filter(s => s !== name);
+                    if (type === 'group') allGrpShifts = allGrpShifts.filter(s => s !== name);
+                    saveLocalShifts();
+                    renderShiftSelects();
+                })
+                .subscribe();
         }
 
         function renderShiftSelects() {
@@ -622,11 +714,20 @@
                 showCancelButton: true, confirmButtonText: 'Lưu', cancelButtonText: 'Hủy'
             });
             if (shiftName && shiftName.trim() !== '') {
+                const name = shiftName.trim();
+                
+                if (type === 'individual' && !allIndShifts.includes(name)) allIndShifts.push(name);
+                if (type === 'group' && !allGrpShifts.includes(name)) allGrpShifts.push(name);
+                saveLocalShifts();
+                renderShiftSelects();
+
                 try {
-                    await fetch(`${API_URL}/shifts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftName: shiftName.trim(), type }) });
-                    await fetchShifts();
-                    Swal.fire({ toast: true, position: 'top-end', title: `Đã thêm ${label} thành công!`, icon: 'success', timer: 1500, showConfirmButton: false });
-                } catch(e) {}
+                    await supabaseClient.from('shifts').upsert({ name, type }, { onConflict: 'name,type' });
+                } catch(e) {
+                    fetch(`${API_URL}/shifts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftName: name, type }) }).catch(()=>{});
+                }
+
+                Swal.fire({ toast: true, position: 'top-end', title: `Đã thêm ${label} thành công!`, icon: 'success', timer: 1500, showConfirmButton: false });
             }
         }
 
@@ -651,23 +752,24 @@
             if (!shiftName) return;
 
             const { isConfirmed } = await Swal.fire({
-                title: 'Xác nhận xóa?', text: `Ca "${shiftName}" sẽ bị xóa vĩnh viễn!`,
+                title: 'Xác nhận xóa?', text: `Ca "${shiftName}" sẽ bị xóa vĩnh viễn khỏi danh sách!`,
                 icon: 'warning', showCancelButton: true,
                 confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', confirmButtonColor: '#ef4444'
             });
             if (!isConfirmed) return;
 
+            if (type === 'group') allGrpShifts = allGrpShifts.filter(s => s !== shiftName);
+            if (type === 'individual') allIndShifts = allIndShifts.filter(s => s !== shiftName);
+            saveLocalShifts();
+            renderShiftSelects();
+
             try {
-                const res = await fetch(`${API_URL}/shifts/${encodeURIComponent(shiftName)}?type=${type}`, { method: 'DELETE' });
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    return Swal.fire('Lỗi xóa ca', errData.error || `Server trả về lỗi ${res.status}`, 'error');
-                }
-                await fetchShifts();
-                Swal.fire({ toast: true, position: 'top-end', title: 'Đã xóa ca thành công!', icon: 'success', timer: 1500, showConfirmButton: false });
+                await supabaseClient.from('shifts').delete().eq('name', shiftName).eq('type', type);
             } catch(e) {
-                Swal.fire('Lỗi', e.message, 'error');
+                fetch(`${API_URL}/shifts/${encodeURIComponent(shiftName)}?type=${type}`, { method: 'DELETE' }).catch(()=>{});
             }
+
+            Swal.fire({ toast: true, position: 'top-end', title: 'Đã xóa ca thành công!', icon: 'success', timer: 1500, showConfirmButton: false });
         }
 
         // TÌM KIẾM
@@ -705,16 +807,6 @@
             } catch(e) { Swal.fire('Lỗi', 'Lỗi truy xuất hệ thống. Thử lại sau!', 'error'); }
         }
 
-        function showOrderCodesList(codesStr, sessionName) {
-            if(!codesStr) return Swal.fire('Trống', 'Ca này không có mã vận đơn nào được lưu.', 'info');
-            const codes = codesStr.split(/[\n,]+/).map(c => c.trim()).filter(c => c);
-            let html = `<div class="text-left text-sm max-h-64 overflow-y-auto bg-gray-50 p-4 border rounded shadow-inner"><ol class="list-decimal list-inside">`;
-            codes.forEach(c => html += `<li class="border-b border-gray-200 py-1 text-gray-800 font-mono tracking-wide">${c}</li>`);
-            html += `</ol></div>`;
-            Swal.fire({ title: `📦 Chi tiết đơn: ${sessionName}`, html: html, confirmButtonText: 'Đóng' });
-        }
-
-
         // ==========================================
         // MODULE CÁ NHÂN
         // ==========================================
@@ -727,6 +819,7 @@
                 }
                 activeSessions[currentEmpId].codes = e.target.value;
                 updateCounter();
+                saveLocalState();
             }
         });
 
@@ -747,7 +840,6 @@
             if (!currentEmpId || !activeSessions[currentEmpId]) return;
             const session = activeSessions[currentEmpId];
             
-            // ADMIN CÓ QUYỀN PAUSE CỦA MÁY KHÁC
             if (session.isRemote && !isAdminAuthenticated) return;
 
             if (session.isPaused) {
@@ -761,6 +853,7 @@
             }
 
             handleEmployeeChange();
+            saveLocalState();
 
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -780,6 +873,7 @@
             if (!currentEmpId) {
                 resetSessionUI(true);
                 renderEmployeeListInInput();
+                saveLocalState();
                 return;
             }
 
@@ -844,6 +938,7 @@
                 resetSessionUI(false);
             }
             renderEmployeeListInInput();
+            saveLocalState();
         }
 
         function resetSessionUI(disableAll = false) {
@@ -886,6 +981,7 @@
                 isPaused: false, codes: '', sessionName: sessionName, orderCount: 0, coefficient: coefficient 
             };
             handleEmployeeChange();
+            saveLocalState();
 
             try {
                 await fetch(`${API_URL}/active-sessions`, {
@@ -907,6 +1003,7 @@
                     fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                     delete activeSessions[currentEmpId];
                     handleEmployeeChange();
+                    saveLocalState();
                     return;
                 }
                 return Swal.fire('Lỗi', 'Chưa có mã vận đơn nào được nhập!', 'error');
@@ -960,6 +1057,7 @@
                 fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                 delete activeSessions[currentEmpId];
                 handleEmployeeChange();
+                saveLocalState();
                 fetchDailyTop();
             } catch (err) {
                 try {
@@ -969,6 +1067,7 @@
                     fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                     delete activeSessions[currentEmpId];
                     handleEmployeeChange();
+                    saveLocalState();
                     fetchDailyTop();
                 } catch(e) { Swal.fire('Lỗi', `Server: ${err.message}`, 'error'); }
             }
@@ -1070,7 +1169,6 @@
         function renderGroupCreatorList() {
             const container = document.getElementById('groupCreatorList');
             if (!container) return;
-            container.innerHTML = '';
             
             const busyEmpIdsInGroups = [];
             Object.values(activeGroupSessions).forEach(g => {
@@ -1089,7 +1187,7 @@
 
             let creatorHtml = '';
             allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
-                const empIdStr = String(emp.id);
+                const empIdStr = String(emp.id); 
                 const isSelected = tempGroupSelection.includes(empIdStr);
                 const isBusyInOtherGroup = busyEmpIdsInGroups.includes(empIdStr);
                 const isBusyInInd = Boolean(activeSessions[empIdStr]);
@@ -1146,6 +1244,7 @@
                 accTime: 0,
                 codes: ''
             };
+            saveLocalState();
             
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1259,7 +1358,7 @@
         function updateManualCount(groupId, value) {
             const grp = activeGroupSessions[groupId];
             if (!grp || grp.isRemote) return;
-            // Chỉ dùng số thủ công khi textarea mã vận đơn rỗng
+            
             const codesEl = document.getElementById(`code_${groupId}`);
             const hasCodes = codesEl && codesEl.value.trim() !== '';
             if (hasCodes) return;
@@ -1272,6 +1371,8 @@
             const perPersonEl = document.getElementById(`perPerson_${groupId}`);
             if(orderCountEl) orderCountEl.textContent = num;
             if(perPersonEl) perPersonEl.textContent = grp.members.length > 0 ? (num / grp.members.length).toFixed(1) : '0.0';
+
+            saveLocalState();
 
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1288,7 +1389,6 @@
                 activeGroupSessions[groupId].orderCount = newCount;
                 activeGroupSessions[groupId].manualCount = 0;
 
-                // Xóa ô manual khi có mã
                 const manualEl = document.getElementById(`manualCount_${groupId}`);
                 if(manualEl) manualEl.value = '';
 
@@ -1297,6 +1397,8 @@
                 const perPersonEl = document.getElementById(`perPerson_${groupId}`);
                 if(orderCountEl) orderCountEl.textContent = newCount;
                 if(perPersonEl) perPersonEl.textContent = (newCount / grp.members.length).toFixed(1);
+
+                saveLocalState();
 
                 fetch(`${API_URL}/active-sessions`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1320,6 +1422,7 @@
                 grp.startTime = null;
             }
             renderActiveGroups();
+            saveLocalState();
 
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1345,6 +1448,7 @@
                     fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
                     delete activeGroupSessions[groupId];
                     renderActiveGroups();
+                    saveLocalState();
                     return;
                 }
                 return Swal.fire('Lỗi', 'Nhóm này chưa nhập mã vận đơn nào!', 'error');
@@ -1364,9 +1468,12 @@
             
             const work_date = getLocalDateString(sessionEndTime);
             
-            let start_time_string = "---";
+            let start_time_string = null;
             if (grp.originalStartTime) {
                 const stD = new Date(grp.originalStartTime);
+                if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
+            } else if (grp.startTime) {
+                const stD = new Date(grp.startTime);
                 if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
             }
 
@@ -1403,6 +1510,7 @@
                         
                         delete activeGroupSessions[groupId];
                         renderActiveGroups();
+                        saveLocalState();
                         fetchDailyTop(); 
                     } catch (e) {
                         try {
@@ -1412,6 +1520,7 @@
                             fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
                             delete activeGroupSessions[groupId];
                             renderActiveGroups();
+                            saveLocalState();
                             fetchDailyTop();
                         } catch(err) { Swal.fire('Lỗi nghiêm trọng', 'Không thể lưu vào CSDL', 'error'); }
                     }
@@ -1472,10 +1581,10 @@
         }
 
         // ==========================================
-        // MODULE: DASHBOARD (Biểu đồ giữ nguyên Đơn)
+        // MODULE: DASHBOARD 
         // ==========================================
         const endD = new Date();
-        const startD = new Date(); startD.setDate(startD.getDate() - 3);
+        const startD = new Date(); startD.setDate(startD.getDate() - 30); 
         document.getElementById('filterStartDate_Ind').value = getLocalDateString(startD);
         document.getElementById('filterEndDate_Ind').value = getLocalDateString(endD);
         document.getElementById('filterStartDate_Grp').value = getLocalDateString(startD);
@@ -1507,7 +1616,7 @@
                 const resDaily = await fetch(`${API_URL}/stats/daily?${queryParam}`);
                 dataDaily = await resDaily.json();
             } catch(e) {
-                let query = supabaseClient.from('productivity_logs').select('total_orders, session_name, work_date, employees(name)').limit(100000);
+                let query = supabaseClient.from('productivity_logs').select('total_orders, session_name, work_date, employees(name)').limit(3000);
                 if (fStart) query = query.gte('work_date', fStart);
                 if (fEnd) query = query.lte('work_date', fEnd);
                 const { data, error } = await query;
@@ -1578,7 +1687,7 @@
                 if(!res.ok) throw new Error();
                 logs = await res.json();
             } catch(e) {
-                let query = supabaseClient.from('productivity_logs').select('session_name, total_orders, total_time_seconds, employees(name)').limit(100000);
+                let query = supabaseClient.from('productivity_logs').select('session_name, total_orders, total_time_seconds, employees(name)').limit(3000);
                 if(fStart) query = query.gte('work_date', fStart);
                 if(fEnd) query = query.lte('work_date', fEnd);
                 const { data, error } = await query;
@@ -1656,7 +1765,7 @@
                 dataInd = data.individual;
                 dataGrp = data.group;
             } catch(e) {
-                let query = supabaseClient.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)').limit(100000);
+                let query = supabaseClient.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)').limit(3000);
                 if (fStart) query = query.gte('work_date', fStart);
                 if (fEnd) query = query.lte('work_date', fEnd);
                 const { data, error } = await query;
@@ -1723,14 +1832,14 @@
 
 
         // ==========================================
-        // LỊCH SỬ  (XÓA CA CHO ADMIN)
+        // LỊCH SỬ 
         // ==========================================
         let currentHistoryEmpId = null;
 
         function openHistoryModal(empId, empName) {
             currentHistoryEmpId = empId;
             document.getElementById('historyModalTitle').innerHTML = `👤 Lịch sử làm việc: <span class="text-blue-300">${empName}</span>`;
-            document.getElementById('historyDateFilter').value = getLocalDateString(new Date());
+            document.getElementById('historyDateFilter').value = ''; 
             document.getElementById('historyModal').classList.remove('hidden');
             fetchAndRenderHistory();
         }
@@ -1742,26 +1851,30 @@
             try {
                 let data = [];
                 try {
-                    const res = await fetch(`${API_URL}/history?employee_id=${currentHistoryEmpId}&date=${date}`);
+                    let url = `${API_URL}/history?employee_id=${currentHistoryEmpId}`;
+                    if(date) url += `&date=${date}`;
+                    const res = await fetch(url);
                     if (!res.ok) throw new Error("Lỗi mạng");
                     data = await res.json();
                 } catch(e) {
-                    let query = supabaseClient.from('productivity_logs').select('*').eq('employee_id', currentHistoryEmpId).order('created_at', { ascending: false }).limit(10000);
+                    let query = supabaseClient.from('productivity_logs').select('id, work_date, session_name, total_orders, coefficient, total_value, total_time_seconds, start_time, end_time').eq('employee_id', currentHistoryEmpId).order('created_at', { ascending: false }).limit(500);
                     if (date) query = query.eq('work_date', date);
                     const { data: dbData, error } = await query;
                     if(error) throw error;
                     data = dbData;
                 }
 
+                currentHistoryLogs = data; 
+
                 const tbody = document.getElementById('historyTableBody');
                 tbody.innerHTML = '';
                 let totalOrders = 0; let totalValueAll = 0; let totalTimeAllSeconds = 0; 
 
                 if(!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-10 text-gray-500 italic font-medium text-lg bg-gray-50">😴 Chưa có dữ liệu làm việc trong ngày này.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-10 text-gray-500 italic font-medium text-lg bg-gray-50">😴 Chưa có dữ liệu làm việc.</td></tr>';
                     document.getElementById('historyTotalOrders').innerHTML = `Tổng: 0 điểm`;
                 } else {
-                    data.forEach(log => {
+                    data.forEach((log, index) => {
                         totalOrders += Number(log.total_orders);
                         let tVal = Number(log.total_value);
                         if(isNaN(tVal) || log.total_value == null) tVal = (Number(log.total_orders) * (Number(log.coefficient)||1));
@@ -1777,28 +1890,23 @@
 
                         const hours = Math.floor(totalTime / 3600); const minutes = Math.floor((totalTime % 3600) / 60); const seconds = totalTime % 60;
                         const timeStr = totalTime > 0 ? `${hours}h ${minutes}p ${seconds}s` : '--';
-                        const secsPerOrder = (totalTime > 0 && log.total_orders > 0) ? (totalTime / log.total_orders).toFixed(1) + 's' : '--';
 
                         const sessionName = log.session_name ? log.session_name : '---';
                         const isGroup = sessionName.startsWith('[NHÓM]');
                         const styleName = isGroup ? `<span class="bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded text-xs font-bold mr-2 border border-indigo-200">Nhóm</span> ${sessionName.replace('[NHÓM] ', '')}` : sessionName;
-
-                        const safeSessionName = sessionName.replace(/'/g, "\\'");
-                        const safeCodes = log.order_codes ? log.order_codes.replace(/\r?\n/g, '\\n').replace(/'/g, "\\'") : '';
-
+                        
                         const delBtn = isAdminAuthenticated ? `<button onclick="deleteLog('${log.id}')" class="bg-white border border-red-300 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 shadow-sm transition-colors whitespace-nowrap ml-2">🗑️ Xóa</button>` : '';
 
                         tbody.innerHTML += `
                             <tr class="hover:bg-blue-50 transition-colors">
                                 <td class="p-4 border-b border-gray-100 text-gray-600 whitespace-nowrap">${log.work_date}</td>
                                 <td class="p-4 border-b border-gray-100 font-bold text-gray-800">${styleName}</td>
-                                <td class="p-4 border-b border-gray-100 font-bold text-center text-lg whitespace-nowrap">${log.total_orders}</td>
+                                <td class="p-4 border-b border-gray-100 text-center font-bold whitespace-nowrap">${log.total_orders}</td>
                                 <td class="p-4 border-b border-gray-100 text-center font-bold text-red-600 whitespace-nowrap">x${log.coefficient || 1}</td>
                                 <td class="p-4 border-b border-gray-100 font-black text-green-600 text-right text-lg whitespace-nowrap">+ ${tVal}</td>
                                 <td class="p-4 border-b border-gray-100 text-gray-600 text-center whitespace-nowrap">${timeStr}</td>
-                                <td class="p-4 border-b border-gray-100 text-center font-bold text-purple-700 whitespace-nowrap">${secsPerOrder}</td>
                                 <td class="p-4 border-b border-gray-100 text-center">
-                                    <button onclick="showOrderCodesList('${safeCodes}', '${safeSessionName}')" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-colors whitespace-nowrap">👁️ Xem</button>
+                                    <button onclick="viewHistoryCodes(${index})" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-colors whitespace-nowrap">👁️ Xem</button>
                                     ${delBtn}
                                 </td>
                             </tr>
@@ -1810,6 +1918,29 @@
                     document.getElementById('historyTotalOrders').innerHTML = `<span class="text-sm font-bold text-gray-500 block uppercase tracking-wider mb-1">Tổng T.Gian: <span class="text-gray-800">${tH}h ${tM}p</span> | SL gốc: ${totalOrders} đơn</span> <span class="text-green-600 block">Tổng KPI: ${totalValueAll} điểm</span>`;
                 }
             } catch (error) {}
+        }
+
+        window.viewHistoryCodes = async function(index) {
+            const log = currentHistoryLogs[index];
+            if (!log) return;
+            const sessionName = log.session_name ? log.session_name.replace(/'/g, "\\'") : '---';
+
+            Swal.fire({ title: 'Đang tải...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const { data, error } = await supabaseClient.from('productivity_logs').select('order_codes').eq('id', log.id).single();
+                if (error) throw error;
+                const codesStr = data.order_codes;
+                if (!codesStr || codesStr === 'ADMIN_ENDED' || codesStr === 'ADMIN_ENDED_GROUP' || codesStr.startsWith('NHAP_TAY:')) {
+                    return Swal.fire('Trống', 'Ca này không có mã vận đơn nào được dán.', 'info');
+                }
+                const codes = codesStr.split(/[\n,]+/).map(c => c.trim()).filter(c => c);
+                let html = `<div class="text-left text-sm max-h-64 overflow-y-auto bg-gray-50 p-4 border rounded shadow-inner"><ol class="list-decimal list-inside">`;
+                codes.forEach(c => html += `<li class="border-b border-gray-200 py-1 text-gray-800 font-mono tracking-wide">${c}</li>`);
+                html += `</ol></div>`;
+                Swal.fire({ title: `📦 Chi tiết đơn: ${sessionName}`, html: html, confirmButtonText: 'Đóng' });
+            } catch(e) {
+                Swal.fire('Lỗi', 'Không thể tải danh sách mã đơn.', 'error');
+            }
         }
 
         async function deleteLog(logId) {
@@ -1989,6 +2120,7 @@
         async function loadEmployeesForSelect(skipFetch = false) {
             if(!skipFetch) await fetchEmployees();
             await fetchShifts();
+            subscribeShiftsRealtime();
             const select = document.getElementById('empSelect');
             const savedId = select.value; 
             select.innerHTML = '<option value="">-- Bấm để chọn nhân viên --</option>';
@@ -2444,6 +2576,8 @@
         }
 
         // Khởi chạy App
+        restoreLocalState();
+
         (async () => {
             await loadEmployeesForSelect();
             updateTeamFields();
