@@ -30,9 +30,7 @@
         .team-member-card img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin: 0 auto 6px; }
         .status-pulse { display: inline-block; width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; margin-right: 5px; animation: pulse-animation 1.5s infinite; }
         .status-paused { display: inline-block; width: 10px; height: 10px; background-color: #eab308; border-radius: 50%; margin-right: 5px; }
-
         @keyframes pulse-animation { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-        
         .group-card { transition: all 0.2s; }
         .group-card.selected { border-color: #4f46e5 !important; background-color: #e0e7ff !important; box-shadow: 0 0 0 2px #c7d2fe; }
     </style>
@@ -41,13 +39,13 @@
 
     <div class="hidden xl:flex fixed left-4 top-24 flex-col gap-4 z-40 w-64">
         <div class="bg-white rounded-xl shadow-lg border border-blue-200 overflow-hidden">
-            <div class="bg-blue-600 text-white text-center py-2 font-bold text-xs uppercase tracking-wide">🏆 Cá Nhân Hôm Nay</div>
+            <div class="bg-blue-600 text-white text-center py-2 font-bold text-xs uppercase tracking-wide">🏆 CÁ NHÂN HÔM NAY (SL)</div>
             <div id="sideTopInd" class="p-3 space-y-2 bg-blue-50/50">
                 <div class="text-center text-gray-400 text-xs py-2 font-medium">Đang tải...</div>
             </div>
         </div>
         <div class="bg-white rounded-xl shadow-lg border border-indigo-200 overflow-hidden">
-            <div class="bg-indigo-600 text-white text-center py-2 font-bold text-xs uppercase tracking-wide">🏆 Nhóm Hôm Nay</div>
+            <div class="bg-indigo-600 text-white text-center py-2 font-bold text-xs uppercase tracking-wide">🏆 NHÓM HÔM NAY (SL)</div>
             <div id="sideTopGrp" class="p-3 space-y-2 bg-indigo-50/50">
                 <div class="text-center text-gray-400 text-xs py-2 font-medium">Đang tải...</div>
             </div>
@@ -63,12 +61,16 @@
                 <button onclick="switchTab('employees')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">👥 Hồ Sơ</button>
                 <button onclick="switchTab('orgchart')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">🏢 Sơ Đồ</button>
                 <button onclick="switchTab('dashboard')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition border border-blue-400 whitespace-nowrap">📊 Dash: Cá Nhân</button>
-                <button onclick="switchTab('dashboardGroup')" class="hover:bg-indigo-600 px-3 py-2 rounded font-semibold transition border border-indigo-400 text-indigo-100 whitespace-nowrap">📈 Dash: Nhóm</button>
+                <button onclick="switchTab('dashboardGroup')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition border border-blue-400 whitespace-nowrap">📈 Dash: Nhóm</button>
+                <button onclick="switchTab('leaderboardFull')" class="bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded font-bold transition shadow whitespace-nowrap text-white border border-orange-300">🏆 BXH Hiệu Suất</button>
             </div>
             
-            <div class="flex items-center bg-white rounded-full px-3 py-1.5 shadow-inner min-w-[250px] shrink-0">
-                <input type="text" id="globalSearchInput" placeholder="🔍 Tìm đơn..." class="outline-none text-sm text-gray-800 w-full bg-transparent font-medium" onkeypress="if(event.key === 'Enter') searchOrderCode()">
-                <button onclick="searchOrderCode()" class="text-blue-600 hover:text-blue-800 font-bold ml-2">Tìm</button>
+            <div class="flex items-center gap-3 shrink-0">
+                <button id="adminNavBtn" onclick="toggleAdminLogin()" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition whitespace-nowrap border border-gray-500">🔒 Admin</button>
+                <div class="flex items-center bg-white rounded-full px-3 py-1.5 shadow-inner min-w-[220px]">
+                    <input type="text" id="globalSearchInput" placeholder="🔍 Tìm đơn..." class="outline-none text-sm text-gray-800 w-full bg-transparent font-medium" onkeypress="if(event.key === 'Enter') searchOrderCode()">
+                    <button onclick="searchOrderCode()" class="text-blue-600 hover:text-blue-800 font-bold ml-2">Tìm</button>
+                </div>
             </div>
         </div>
     </nav>
@@ -84,10 +86,18 @@
                         <label class="block text-sm font-bold mb-1 text-gray-700">Chọn nhân viên đang thao tác:</label>
                         <select id="empSelect" onchange="handleEmployeeChange()" class="w-full border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-4"></select>
                         
-                        <label class="block text-sm font-bold mb-1 text-gray-700">Tên ca làm (Bắt buộc):</label>
-                        <input type="text" id="sessionNameInput" placeholder="VD: Xử lý hàng hoàn, Ca sáng..." class="w-full border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <label class="block text-sm font-bold mb-1 text-gray-700">Chọn / Thêm Ca Làm & Hệ Số Độ Khó:</label>
+                        <div class="flex gap-2 w-full">
+                            <select id="sessionSelect" class="flex-1 border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="">-- Chọn ca làm đã lưu --</option>
+                            </select>
+                            <input type="number" id="shiftCoefficient" placeholder="Hệ số (VD: 8)" class="w-24 border-2 border-red-300 p-2.5 rounded-lg font-bold text-red-600 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 text-center" step="0.1" min="0.1">
+                            <button onclick="addNewShift('individual')" class="bg-blue-600 text-white px-3 py-2.5 rounded-lg font-bold hover:bg-blue-700 shadow transition-colors whitespace-nowrap">+ Thêm</button>
+                            <button onclick="deleteShift('individual')" class="bg-red-500 text-white px-3 py-2.5 rounded-lg font-bold hover:bg-red-600 shadow transition-colors whitespace-nowrap">🗑 Xóa</button>
+                        </div>
                     </div>
-                    <div class="text-center lg:col-span-1 flex flex-col justify-center bg-white rounded-lg border border-blue-100 p-4">
+                    <div class="text-center lg:col-span-1 flex flex-col justify-center bg-white rounded-lg border border-blue-100 p-4 relative">
+                        <button id="adminOverrideBadge" class="hidden absolute top-2 right-2 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold border border-red-200">QUYỀN ADMIN</button>
                         <div class="text-sm font-bold text-gray-500 uppercase tracking-wider">Trạng thái phiên</div>
                         <div id="sessionStatus" class="text-2xl font-black text-gray-800 mt-2 flex items-center justify-center">Chưa bắt đầu</div>
                         <div id="sessionTimer" class="text-sm text-gray-500 mt-2 font-medium bg-gray-50 py-1 px-3 rounded-full inline-block mx-auto">🕒 --:--:--</div>
@@ -138,24 +148,31 @@
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-2">
-                        <label class="block text-sm font-bold mb-3 text-indigo-800 bg-indigo-100 py-1 px-3 rounded inline-block">1. Click chọn các thành viên (Ít nhất 2 người):</label>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
+                            <label class="block text-sm font-bold text-indigo-800 bg-indigo-100 py-1.5 px-3 rounded-lg inline-block">1. Click chọn các thành viên:</label>
+                            <select id="quickSelectTeam" onchange="selectTeamMembers(this.value)" class="border-2 border-indigo-400 py-1.5 px-3 rounded-lg font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer shadow-sm text-sm w-full sm:w-auto">
+                                <option value="">⚡ Chọn nhanh theo Tổ</option>
+                            </select>
+                        </div>
                         <div id="groupCreatorList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-3 bg-white rounded-lg border border-indigo-200 shadow-inner">
                         </div>
                     </div>
                     <div class="flex flex-col justify-center bg-white p-5 rounded-lg border border-indigo-100 shadow-sm">
-                        <label class="block text-sm font-bold mb-2 text-indigo-800">2. Tên Nhóm / Tên Ca (Bắt buộc):</label>
-                        <input type="text" id="newGroupSessionName" placeholder="VD: Nhóm A bốc Hộp 8..." class="w-full border-2 border-indigo-300 p-3 rounded-lg font-bold mb-6 text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50/50">
-                        <button onclick="startCreatedGroup()" class="w-full bg-green-600 text-white py-4 rounded-lg font-black shadow-lg hover:bg-green-700 transition text-lg uppercase tracking-wide">🚀 Khởi Động</button>
+                        <label class="block text-sm font-bold mb-1 text-indigo-800">2. Chọn Ca & Hệ số Nhóm (Bắt buộc):</label>
+                        <div class="flex gap-2 w-full mb-6 mt-2">
+                            <select id="newGroupSessionSelect" class="flex-1 border-2 border-indigo-300 p-3 rounded-lg font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50/50">
+                                <option value="">-- Chọn ca làm --</option>
+                            </select>
+                            <input type="number" id="newGroupCoefficient" placeholder="Hệ số (VD: 8)" class="w-24 border-2 border-red-300 p-3 rounded-lg font-bold text-red-600 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 text-center" step="0.1" min="0.1">
+                            <button onclick="addNewShift('group')" class="bg-indigo-600 text-white px-3 py-2.5 rounded-lg font-bold hover:bg-indigo-700 shadow transition-colors whitespace-nowrap">+ Thêm</button>
+                            <button onclick="deleteShift('group')" class="bg-red-500 text-white px-3 py-2.5 rounded-lg font-bold hover:bg-red-600 shadow transition-colors whitespace-nowrap">🗑 Xóa</button>
+                        </div>
+                        <button onclick="startCreatedGroup()" class="w-full bg-green-600 text-white py-4 rounded-lg font-black shadow-lg hover:bg-green-700 transition text-lg uppercase tracking-wide">🚀 Khởi Động Nhóm</button>
                     </div>
                 </div>
             </div>
 
-            <div id="activeGroupsContainer" class="grid grid-cols-1 gap-6">
-                <div class="text-center text-gray-400 py-16 italic border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
-                    <div class="text-4xl mb-3">😴</div>
-                    Chưa có nhóm nào đang chạy.<br>Bấm nút <b>"+ Bắt Đầu Nhóm Mới"</b> ở góc trên bên phải.
-                </div>
-            </div>
+            <div id="activeGroupsContainer" class="grid grid-cols-1 gap-6"></div>
         </div>
 
         <div id="employees" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -222,7 +239,7 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b pb-4 gap-4">
                 <div>
                     <h2 class="text-3xl font-black text-blue-800">📊 Thống Kê Cá Nhân</h2>
-                    <p class="text-sm text-gray-500 font-medium mt-1">Dữ liệu phân tích từ các ca làm độc lập.</p>
+                    <p class="text-sm text-gray-500 font-medium mt-1">Dữ liệu phân tích từ số lượng đơn thô (Chưa nhân hệ số).</p>
                 </div>
                 <div class="flex items-center gap-3 bg-gray-100 p-3 rounded-xl border border-gray-200 shadow-sm">
                     <label class="font-bold text-sm text-gray-700">Từ:</label>
@@ -234,36 +251,30 @@
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                 <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
-                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2 flex items-center gap-2">📦 Sản lượng cá nhân</h3>
+                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2 flex items-center gap-2">📦 Sản lượng cá nhân (Số Lượng Đơn)</h3>
                     <canvas id="empChart_Ind" class="w-full"></canvas>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
-                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2 flex items-center gap-2">📈 Tổng kho theo ngày (Cá nhân)</h3>
+                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2 flex items-center gap-2">📈 Tổng kho theo ngày (Số Lượng Đơn)</h3>
                     <canvas id="dailyChart_Ind" class="w-full"></canvas>
                 </div>
             </div>
-            
-            <div class="bg-blue-50 p-8 rounded-2xl border-2 border-blue-100 shadow-md">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                    <div>
-                        <h3 class="text-2xl font-black text-blue-900">🏆 Xếp Hạng Tốc Độ Đóng Gói</h3>
-                        <p class="text-sm text-blue-700 font-medium mt-1">Đánh giá hiệu suất độc lập của từng nhân viên</p>
-                    </div>
-                    <select id="sessionLeaderboardSelect_Ind" onchange="renderSessionLeaderboard('individual')" class="border-2 border-blue-400 p-3 rounded-xl font-bold text-blue-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm min-w-[250px] cursor-pointer">
-                        <option value="">-- Chọn tên ca làm để phân tích --</option>
+            <div class="bg-white p-6 rounded-2xl border border-blue-200 shadow-lg">
+                <h3 class="font-bold text-lg mb-4 text-blue-900 border-b border-blue-100 pb-2 flex items-center gap-2">🏁 Xếp hạng tốc độ theo Ca (Giây/Đơn — Từ nhanh nhất)</h3>
+                <div class="flex gap-3 mb-5">
+                    <select id="sessionRankSelect_Ind" onchange="loadSessionRanking('individual')" class="flex-1 border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Chọn ca để xem xếp hạng tốc độ --</option>
                     </select>
                 </div>
-                <div id="sessionLeaderboardContainer_Ind" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-                    <div class="col-span-full text-center text-blue-400 italic py-8 border-2 border-dashed border-blue-200 rounded-xl bg-white/50">Vui lòng chọn tên ca ở danh sách trên để xem bảng xếp hạng tốc độ.</div>
-                </div>
+                <div id="sessionRankList_Ind" class="space-y-2"></div>
             </div>
         </div>
 
         <div id="dashboardGroup" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b pb-4 gap-4">
                 <div>
-                    <h2 class="text-3xl font-black text-indigo-800">📈 Thống Kê Làm Việc Nhóm</h2>
-                    <p class="text-sm text-gray-500 font-medium mt-1">Dữ liệu phân tích từ các ca làm chung đã chia đều.</p>
+                    <h2 class="text-3xl font-black text-indigo-800">📈 Thống Kê Nhóm</h2>
+                    <p class="text-sm text-gray-500 font-medium mt-1">Dữ liệu phân tích từ số lượng đơn thô (Chưa nhân hệ số).</p>
                 </div>
                 <div class="flex items-center gap-3 bg-indigo-50 p-3 rounded-xl border border-indigo-200 shadow-sm">
                     <label class="font-bold text-sm text-indigo-900">Từ:</label>
@@ -275,27 +286,52 @@
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                 <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-lg hover:shadow-xl transition-shadow">
-                    <h3 class="font-bold text-lg mb-4 text-indigo-900 border-b border-indigo-50 pb-2 flex items-center gap-2">🤝 Thành tích nhận được từ Nhóm</h3>
+                    <h3 class="font-bold text-lg mb-4 text-indigo-900 border-b border-indigo-50 pb-2 flex items-center gap-2">🤝 Đơn nhận được từ Nhóm (Số lượng)</h3>
                     <canvas id="empChart_Grp" class="w-full"></canvas>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-lg hover:shadow-xl transition-shadow">
-                    <h3 class="font-bold text-lg mb-4 text-indigo-900 border-b border-indigo-50 pb-2 flex items-center gap-2">📊 Tổng kho theo ngày (Nhóm)</h3>
+                    <h3 class="font-bold text-lg mb-4 text-indigo-900 border-b border-indigo-50 pb-2 flex items-center gap-2">📊 Tổng kho theo ngày (Số Lượng Nhóm)</h3>
                     <canvas id="dailyChart_Grp" class="w-full"></canvas>
                 </div>
             </div>
-            
-            <div class="bg-indigo-50 p-8 rounded-2xl border-2 border-indigo-100 shadow-md">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                    <div>
-                        <h3 class="text-2xl font-black text-indigo-900">🏆 Xếp Hạng Tốc Độ (Đội Nhóm)</h3>
-                        <p class="text-sm text-indigo-700 font-medium mt-1">Tốc độ trung bình dựa trên sự phối hợp của cả team</p>
-                    </div>
-                    <select id="sessionLeaderboardSelect_Grp" onchange="renderSessionLeaderboard('group')" class="border-2 border-indigo-400 p-3 rounded-xl font-bold text-indigo-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm min-w-[250px] cursor-pointer">
-                        <option value="">-- Chọn tên nhóm / ca để phân tích --</option>
+            <div class="bg-white p-6 rounded-2xl border border-indigo-200 shadow-lg">
+                <h3 class="font-bold text-lg mb-4 text-indigo-900 border-b border-indigo-100 pb-2 flex items-center gap-2">🏁 Xếp hạng tốc độ theo Ca Nhóm (Giây/Đơn — Từ nhanh nhất)</h3>
+                <div class="flex gap-3 mb-5">
+                    <select id="sessionRankSelect_Grp" onchange="loadSessionRanking('group')" class="flex-1 border-2 border-indigo-300 p-2.5 rounded-lg font-bold text-indigo-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Chọn ca nhóm để xem xếp hạng tốc độ --</option>
                     </select>
                 </div>
-                <div id="sessionLeaderboardContainer_Grp" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-                    <div class="col-span-full text-center text-indigo-400 italic py-8 border-2 border-dashed border-indigo-200 rounded-xl bg-white/50">Vui lòng chọn tên nhóm ở danh sách trên để xem đánh giá.</div>
+                <div id="sessionRankList_Grp" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div id="leaderboardFull" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b pb-4 gap-4">
+                <div>
+                    <h2 class="text-3xl font-black text-orange-600">🏆 BẢNG XẾP HẠNG HIỆU SUẤT</h2>
+                    <p class="text-sm text-gray-600 font-medium mt-1">Đánh giá theo <b class="text-red-500">Giá trị công việc</b> (Số lượng x Hệ số).<br>Hiệu suất = Tổng Giá trị / Tổng thời gian thực làm.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-orange-50 p-3 rounded-xl border border-orange-200 shadow-sm">
+                    <label class="font-bold text-sm text-orange-900">Từ:</label>
+                    <input type="date" id="filterStartDate_Perf" onchange="loadPerformanceBoard()" class="border border-orange-300 p-2 rounded-lg font-bold text-orange-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer">
+                    <label class="font-bold text-sm text-orange-900 ml-2">Đến:</label>
+                    <input type="date" id="filterEndDate_Perf" onchange="loadPerformanceBoard()" class="border border-orange-300 p-2 rounded-lg font-bold text-orange-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 shadow-md">
+                    <h3 class="text-2xl font-black text-blue-900 mb-6 flex items-center gap-2">👤 TOP HIỆU SUẤT CÁ NHÂN</h3>
+                    <div id="perfContainer_Ind" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        <div class="text-center text-blue-400 italic py-8">Đang tải dữ liệu...</div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-6 rounded-2xl border-2 border-indigo-200 shadow-md">
+                    <h3 class="text-2xl font-black text-indigo-900 mb-6 flex items-center gap-2">👥 TOP HIỆU SUẤT LÀM NHÓM</h3>
+                    <div id="perfContainer_Grp" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        <div class="text-center text-indigo-400 italic py-8">Đang tải dữ liệu...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -323,11 +359,11 @@
                             <tr>
                                 <th class="p-4 border-b-2 font-bold whitespace-nowrap">Ngày</th>
                                 <th class="p-4 border-b-2 font-bold text-blue-800">Tên Ca Làm</th>
-                                <th class="p-4 border-b-2 font-bold whitespace-nowrap">Giờ Bắt đầu</th>
-                                <th class="p-4 border-b-2 font-bold whitespace-nowrap">Giờ Kết thúc</th>
-                                <th class="p-4 border-b-2 text-right font-bold text-green-700 whitespace-nowrap">Sản lượng</th>
+                                <th class="p-4 border-b-2 text-center font-bold whitespace-nowrap">Số lượng</th>
+                                <th class="p-4 border-b-2 text-center font-bold text-red-600 whitespace-nowrap">Hệ số</th>
+                                <th class="p-4 border-b-2 text-right font-bold text-green-700 whitespace-nowrap">Tổng Giá trị</th>
                                 <th class="p-4 border-b-2 text-center font-bold whitespace-nowrap">Tổng thời gian</th>
-                                <th class="p-4 border-b-2 text-center font-bold whitespace-nowrap">Tốc độ (s/đơn)</th>
+                                <th class="p-4 border-b-2 text-center font-bold text-purple-700 whitespace-nowrap">Giây/Đơn</th>
                                 <th class="p-4 border-b-2 text-center font-bold">Thao tác</th>
                             </tr>
                         </thead>
@@ -336,27 +372,28 @@
                 </div>
             </div>
             <div class="bg-gray-100 p-6 flex justify-between items-center border-t border-gray-200 rounded-b-2xl">
-                <div class="text-gray-500 font-medium text-sm">💡 Bao gồm cả thành tích cá nhân và số đơn được chia từ nhóm.</div>
-                <div class="text-right text-2xl font-black text-blue-900 bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-200" id="historyTotalOrders">Tổng: 0 đơn</div>
+                <div class="text-gray-500 font-medium text-sm">💡 Giá trị = Số lượng x Hệ số. Dữ liệu cũ rỗng hệ số được tính là x1.</div>
+                <div class="text-right text-xl font-black text-blue-900 bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-200" id="historyTotalOrders">Tổng: 0 đơn</div>
             </div>
         </div>
     </div>
 
     <script>
+        // BÁC THAY 127.0.0.1 BẰNG IP CỦA BÁC HOẶC LINK RENDER NHÉ!
         const API_URL = 'https://backend-kho.onrender.com/api';
-        const SUPABASE_URL_FRONTEND = 'https://ssvniazffehszaazxcdz.supabase.co';
-        const SUPABASE_ANON_KEY_FRONTEND = 'sb_publishable_lzKyn9vzBAGSzWLbXVwnnQ_gzfA7DOb';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL_FRONTEND, SUPABASE_ANON_KEY_FRONTEND);
+
+        // ĐỔI 2 GIÁ TRỊ NÀY BẰNG SUPABASE URL VÀ ANON KEY CỦA BÁC
+        const SUPABASE_URL = 'https://ssvniazffehszaazxcdz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_lzKyn9vzBAGSzWLbXVwnnQ_gzfA7DOb';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let allEmployees = [];
+        let allIndShifts = [];
+        let allGrpShifts = [];
         let activeSessions = {}; 
-        let currentEmpId = null;
-
         let activeGroupSessions = {}; 
+        let currentEmpId = null;
         let tempGroupSelection = []; 
-
-        let globalSessionLogsForDashboard_Ind = [];
-        let globalSessionLogsForDashboard_Grp = [];
 
         function getLocalDateString(dateStrOrObj) {
             const date = dateStrOrObj ? new Date(dateStrOrObj) : new Date();
@@ -364,90 +401,71 @@
             return (new Date(date.getTime() - offset)).toISOString().split('T')[0];
         }
 
-        function loadSessionsFromStorage() {
-            const saved = localStorage.getItem('warehouse_active_sessions');
-            if (saved) {
-                try {
-                    activeSessions = JSON.parse(saved);
-                    for (let id in activeSessions) {
-                        if (activeSessions[id].startTime) activeSessions[id].startTime = new Date(activeSessions[id].startTime);
-                        if (activeSessions[id].originalStartTime) activeSessions[id].originalStartTime = new Date(activeSessions[id].originalStartTime);
-                    }
-                } catch (e) { activeSessions = {}; }
-            }
+        // ==========================================
+        // 0. QUẢN LÝ QUYỀN LỰC
+        // ==========================================
+        const MANAGER_PIN  = '8888';           // Quản lý: xem Hồ Sơ, Dashboard
+        const ADMIN_PIN    = 'luongdkz2000';   // Quản trị viên: xóa ca, kết thúc ca máy khác
 
-            const savedGroups = localStorage.getItem('warehouse_group_sessions');
-            if (savedGroups) {
-                try {
-                    activeGroupSessions = JSON.parse(savedGroups);
-                    for (let gid in activeGroupSessions) {
-                        if (activeGroupSessions[gid].startTime) activeGroupSessions[gid].startTime = new Date(activeGroupSessions[gid].startTime);
-                        if (activeGroupSessions[gid].originalStartTime) activeGroupSessions[gid].originalStartTime = new Date(activeGroupSessions[gid].originalStartTime);
+        let isManagerAuthenticated = false;    // true khi nhập 8888 hoặc luongdkz2000
+        let isAdminAuthenticated   = false;    // true CHỈ khi nhập luongdkz2000
+
+        function checkAdminUI() {
+            const badge  = document.getElementById('adminOverrideBadge');
+            const navBtn = document.getElementById('adminNavBtn');
+            if (isAdminAuthenticated) {
+                if(badge)  badge.classList.remove('hidden');
+                if(navBtn) { navBtn.textContent = '🔓 Admin: BẬT'; navBtn.className = 'bg-green-500 hover:bg-green-400 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition whitespace-nowrap border border-green-400'; }
+            } else {
+                if(badge)  badge.classList.add('hidden');
+                if(navBtn) { navBtn.textContent = '🔒 Admin'; navBtn.className = 'bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition whitespace-nowrap border border-gray-500'; }
+            }
+            handleEmployeeChange();
+            renderActiveGroups();
+        }
+
+        function toggleAdminLogin() {
+            if (isAdminAuthenticated) {
+                Swal.fire({ title: 'Thoát quyền Quản trị viên?', icon: 'question', showCancelButton: true, confirmButtonText: 'Thoát', cancelButtonText: 'Hủy', confirmButtonColor: '#6b7280' })
+                .then(r => { if(r.isConfirmed) { isAdminAuthenticated = false; isManagerAuthenticated = false; checkAdminUI(); } });
+            } else {
+                Swal.fire({
+                    title: '🔐 Đăng Nhập Quản Trị Viên',
+                    input: 'password', inputAttributes: { autocapitalize: 'off', autocorrect: 'off', placeholder: 'Nhập mật khẩu...' },
+                    showCancelButton: true, confirmButtonText: 'Đăng nhập', cancelButtonText: 'Hủy', confirmButtonColor: '#3b82f6'
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        if (result.value === ADMIN_PIN) {
+                            isAdminAuthenticated = true;
+                            isManagerAuthenticated = true;
+                            checkAdminUI();
+                            Swal.fire({ icon: 'success', title: '✅ Quản Trị Viên!', text: 'Bạn có toàn quyền hệ thống.', timer: 1500, showConfirmButton: false });
+                        } else {
+                            Swal.fire('Từ chối', 'Sai mật khẩu!', 'error');
+                        }
                     }
-                } catch (e) { activeGroupSessions = {}; }
+                });
             }
         }
-        loadSessionsFromStorage(); 
-
-        setInterval(async () => {
-            try {
-                const res = await fetch(`${API_URL}/active-sessions`);
-                if (res.ok) {
-                    const serverSessions = await res.json();
-                    let needsRender = false;
-                    let needsHandleChange = false;
-
-                    for (let emp of allEmployees) {
-                        const srv = serverSessions[emp.id];
-                        const loc = activeSessions[emp.id];
-                        
-                        if (srv && !loc) {
-                            activeSessions[emp.id] = { 
-                                isRemote: true, sessionName: srv.sessionName, 
-                                startTime: srv.startTime ? new Date(srv.startTime) : null,
-                                orderCount: srv.orderCount || 0, isPaused: srv.isPaused || false,
-                                accumulatedTime: srv.accumulatedTime || 0
-                            };
-                            needsRender = true;
-                        } 
-                        else if (srv && loc && loc.isRemote) {
-                            if (loc.orderCount !== srv.orderCount || loc.isPaused !== srv.isPaused || loc.accumulatedTime !== srv.accumulatedTime) {
-                                loc.orderCount = srv.orderCount; loc.isPaused = srv.isPaused; loc.accumulatedTime = srv.accumulatedTime;
-                                if(srv.startTime) loc.startTime = new Date(srv.startTime);
-                                needsHandleChange = true; needsRender = true;
-                            }
-                        }
-                        else if (!srv && loc && loc.isRemote) {
-                            delete activeSessions[emp.id];
-                            needsRender = true; needsHandleChange = true;
-                        }
-                    }
-                    if (needsRender) renderEmployeeListInInput();
-                    if ((needsRender || needsHandleChange) && currentEmpId) handleEmployeeChange(); 
-                }
-            } catch (e) { }
-        }, 2000); 
-
-        const ADMIN_PIN = '8888'; 
-        let isAdminAuthenticated = false; 
 
         function switchTab(tabId) {
-            const protectedTabs = ['employees', 'orgchart', 'dashboard', 'dashboardGroup'];
-            if (protectedTabs.includes(tabId) && !isAdminAuthenticated) {
+            const managerTabs = ['employees', 'orgchart', 'dashboard', 'dashboardGroup', 'leaderboardFull'];
+            if (managerTabs.includes(tabId) && !isManagerAuthenticated) {
                 Swal.fire({
-                    title: '🔒 Vùng Cấm!',
-                    text: 'Vui lòng nhập Mã PIN Quản lý để truy cập:',
+                    title: '🔒 Cần Mã PIN Quản Lý',
+                    text: 'Nhập mã PIN để xem khu vực này:',
                     input: 'password',
                     inputAttributes: { autocapitalize: 'off', autocorrect: 'off', placeholder: 'Nhập mã PIN...' },
                     showCancelButton: true, confirmButtonText: 'Mở khóa', cancelButtonText: 'Hủy', confirmButtonColor: '#3b82f6',
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        if (result.value === ADMIN_PIN) {
-                            isAdminAuthenticated = true;
-                            Swal.fire({ icon: 'success', title: 'Đã mở khóa!', text: 'Bạn có toàn quyền Quản lý.', timer: 1500, showConfirmButton: false });
+                        if (result.value === MANAGER_PIN || result.value === ADMIN_PIN) {
+                            isManagerAuthenticated = true;
+                            if (result.value === ADMIN_PIN) { isAdminAuthenticated = true; checkAdminUI(); }
+                            Swal.fire({ icon: 'success', title: 'Đã mở khóa!', timer: 1200, showConfirmButton: false });
                             executeSwitchTab(tabId);
                         } else {
-                            Swal.fire('Từ chối', 'Sai Mã PIN! Bạn không có quyền truy cập.', 'error');
+                            Swal.fire('Từ chối', 'Sai mã PIN!', 'error');
                         }
                     }
                 });
@@ -463,23 +481,212 @@
             if(tabId === 'orgchart') renderOrgChart();
             if(tabId === 'dashboard') loadDashboards('individual');
             if(tabId === 'dashboardGroup') loadDashboards('group');
+            if(tabId === 'leaderboardFull') loadPerformanceBoard();
             if(tabId === 'input') loadEmployeesForSelect();
             if(tabId === 'group') renderActiveGroups(); 
         }
 
+        // ==========================================
+        // ĐỒNG BỘ REALTIME TỪ SERVER.JS
+        // ==========================================
+        setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/active-sessions`);
+                if (res.ok) {
+                    const serverSessions = await res.json();
+                    
+                    let srvInd = {};
+                    let srvGrp = {};
+                    for(let k in serverSessions) {
+                        if(k.startsWith('GROUP_')) srvGrp[k.replace('GROUP_', '')] = serverSessions[k];
+                        else srvInd[k] = serverSessions[k];
+                    }
+
+                    let needsRenderInd = false;
+                    let needsHandleChange = false;
+                    let needsRenderGrp = false;
+
+                    for (let emp of allEmployees) {
+                        const srv = srvInd[emp.id];
+                        const loc = activeSessions[emp.id];
+                        
+                        if (srv && !loc) {
+                            activeSessions[emp.id] = { 
+                                isRemote: true, sessionName: srv.sessionName, coefficient: srv.coefficient || 1,
+                                startTime: srv.startTime ? new Date(srv.startTime) : null,
+                                orderCount: srv.orderCount || 0, isPaused: srv.isPaused || false,
+                                accumulatedTime: srv.accumulatedTime || 0
+                            };
+                            needsRenderInd = true;
+                        } 
+                        else if (srv && loc && loc.isRemote) {
+                            if (loc.orderCount !== srv.orderCount || loc.isPaused !== srv.isPaused || loc.accumulatedTime !== srv.accumulatedTime) {
+                                loc.orderCount = srv.orderCount; loc.isPaused = srv.isPaused; loc.accumulatedTime = srv.accumulatedTime;
+                                if(srv.startTime) loc.startTime = new Date(srv.startTime);
+                                needsHandleChange = true; needsRenderInd = true;
+                            }
+                        }
+                        else if (!srv && loc) {
+                            delete activeSessions[emp.id];
+                            needsRenderInd = true; needsHandleChange = true;
+                        }
+                    }
+
+                    for(let gid in srvGrp) {
+                        const srv = srvGrp[gid];
+                        const loc = activeGroupSessions[gid];
+
+                        if(srv && !loc) {
+                            activeGroupSessions[gid] = {
+                                isRemote: true, name: srv.sessionName, coefficient: srv.coefficient || 1, members: srv.members || [],
+                                startTime: srv.startTime ? new Date(srv.startTime) : null,
+                                orderCount: srv.orderCount || 0, isPaused: srv.isPaused || false, accTime: srv.accumulatedTime || 0, codes: ''
+                            };
+                            needsRenderGrp = true;
+                        }
+                        else if(srv && loc && loc.isRemote) {
+                            if(loc.orderCount !== srv.orderCount || loc.isPaused !== srv.isPaused || loc.accTime !== srv.accumulatedTime) {
+                                loc.orderCount = srv.orderCount; loc.isPaused = srv.isPaused; loc.accTime = srv.accumulatedTime;
+                                if(srv.startTime) loc.startTime = new Date(srv.startTime);
+                                needsRenderGrp = true;
+                            }
+                        }
+                    }
+
+                    for(let gid in activeGroupSessions) {
+                        if(activeGroupSessions[gid].isRemote && !srvGrp[gid]) {
+                            delete activeGroupSessions[gid];
+                            needsRenderGrp = true;
+                        }
+                    }
+
+                    if (needsRenderInd) renderEmployeeListInInput();
+                    if ((needsRenderInd || needsHandleChange) && currentEmpId) handleEmployeeChange(); 
+                    if (needsRenderGrp) {
+                        renderActiveGroups();
+                        renderGroupCreatorList();
+                    }
+                }
+            } catch (e) {}
+        }, 2000);
+
+        // ==========================================
+        // MODULE: QUẢN LÝ TÊN CA (SHIFTS)
+        // ==========================================
+        async function fetchShifts() {
+            try {
+                const [resInd, resGrp] = await Promise.all([
+                    fetch(`${API_URL}/shifts?type=individual`),
+                    fetch(`${API_URL}/shifts?type=group`)
+                ]);
+                if(resInd.ok) allIndShifts = await resInd.json();
+                if(resGrp.ok) allGrpShifts = await resGrp.json();
+            } catch(e) {
+                const { data } = await supabaseClient.from('shifts').select('name, type').order('id', { ascending: true });
+                if(data) {
+                    allIndShifts = data.filter(s => s.type === 'individual').map(s => s.name);
+                    allGrpShifts = data.filter(s => s.type === 'group').map(s => s.name);
+                }
+            }
+            renderShiftSelects();
+        }
+
+        function renderShiftSelects() {
+            const indSelect    = document.getElementById('sessionSelect');
+            const grpSelect    = document.getElementById('newGroupSessionSelect');
+            const rankIndSelect = document.getElementById('sessionRankSelect_Ind');
+            const rankGrpSelect = document.getElementById('sessionRankSelect_Grp');
+
+            const vInd     = indSelect     ? indSelect.value     : '';
+            const vGrp     = grpSelect     ? grpSelect.value     : '';
+            const vRankInd = rankIndSelect ? rankIndSelect.value : '';
+            const vRankGrp = rankGrpSelect ? rankGrpSelect.value : '';
+
+            let indOptions = '';
+            allIndShifts.forEach(s => { indOptions += `<option value="${s}">${s}</option>`; });
+
+            let grpOptions = '';
+            allGrpShifts.forEach(s => { grpOptions += `<option value="${s}">${s}</option>`; });
+
+            if(indSelect)     { indSelect.innerHTML     = '<option value="">-- Chọn ca làm đã lưu --</option>' + indOptions; indSelect.value = vInd; }
+            if(grpSelect)     { grpSelect.innerHTML     = '<option value="">-- Chọn ca làm --</option>' + grpOptions;        grpSelect.value = vGrp; }
+            if(rankIndSelect) { rankIndSelect.innerHTML = '<option value="">-- Chọn ca để xem xếp hạng --</option>' + indOptions; rankIndSelect.value = vRankInd; }
+            if(rankGrpSelect) { rankGrpSelect.innerHTML = '<option value="">-- Chọn ca nhóm để xem xếp hạng --</option>' + grpOptions; rankGrpSelect.value = vRankGrp; }
+        }
+
+        async function addNewShift(type = 'individual') {
+            const label = type === 'group' ? 'Ca Nhóm' : 'Ca Cá Nhân';
+            const { value: shiftName } = await Swal.fire({
+                title: `Thêm ${label} Mới`,
+                input: 'text', inputPlaceholder: 'VD: Đóng hộp lớn, Bốc vác...',
+                showCancelButton: true, confirmButtonText: 'Lưu', cancelButtonText: 'Hủy'
+            });
+            if (shiftName && shiftName.trim() !== '') {
+                try {
+                    await fetch(`${API_URL}/shifts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shiftName: shiftName.trim(), type }) });
+                    await fetchShifts();
+                    Swal.fire({ toast: true, position: 'top-end', title: `Đã thêm ${label} thành công!`, icon: 'success', timer: 1500, showConfirmButton: false });
+                } catch(e) {}
+            }
+        }
+
+        async function deleteShift(type = 'individual') {
+            if (!isAdminAuthenticated) {
+                return Swal.fire('Không có quyền', 'Chỉ quản trị viên mới có thể xóa ca làm!', 'warning');
+            }
+            const shifts = type === 'group' ? allGrpShifts : allIndShifts;
+            const label = type === 'group' ? 'Ca Nhóm' : 'Ca Cá Nhân';
+            if (shifts.length === 0) return Swal.fire('Thông báo', 'Không có ca nào để xóa!', 'info');
+
+            const inputOptions = {};
+            shifts.forEach(s => { inputOptions[s] = s; });
+
+            const { value: shiftName } = await Swal.fire({
+                title: `Xóa ${label}`,
+                input: 'select', inputOptions,
+                inputPlaceholder: '-- Chọn ca cần xóa --',
+                showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy',
+                confirmButtonColor: '#ef4444'
+            });
+            if (!shiftName) return;
+
+            const { isConfirmed } = await Swal.fire({
+                title: 'Xác nhận xóa?', text: `Ca "${shiftName}" sẽ bị xóa vĩnh viễn!`,
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', confirmButtonColor: '#ef4444'
+            });
+            if (!isConfirmed) return;
+
+            try {
+                const res = await fetch(`${API_URL}/shifts/${encodeURIComponent(shiftName)}?type=${type}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    return Swal.fire('Lỗi xóa ca', errData.error || `Server trả về lỗi ${res.status}`, 'error');
+                }
+                await fetchShifts();
+                Swal.fire({ toast: true, position: 'top-end', title: 'Đã xóa ca thành công!', icon: 'success', timer: 1500, showConfirmButton: false });
+            } catch(e) {
+                Swal.fire('Lỗi', e.message, 'error');
+            }
+        }
+
+        // TÌM KIẾM
         async function searchOrderCode() {
             const code = document.getElementById('globalSearchInput').value.trim();
             if(!code) return Swal.fire('Chú ý', 'Vui lòng nhập mã vận đơn cần tìm', 'info');
             Swal.fire({ title: 'Đang tìm kiếm...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             try {
-                const { data: logs, error } = await supabaseClient
-                    .from('productivity_logs')
-                    .select('*, employees(name, role, team_name)')
-                    .ilike('order_codes', `%${code}%`)
-                    .order('created_at', { ascending: false })
-                    .limit(100);
-
-                if(error) throw error;
+                let logs = [];
+                try {
+                    const res = await fetch(`${API_URL}/search?code=${code}`);
+                    if(!res.ok) throw new Error();
+                    logs = await res.json();
+                } catch(e) {
+                    const { data, error } = await supabaseClient.from('productivity_logs').select('*, employees(name, role, team_name)').ilike('order_codes', `%${code}%`).order('created_at', { ascending: false }).limit(100);
+                    if(error) throw error;
+                    logs = data;
+                }
+                
                 if(logs.length === 0) {
                     Swal.fire('Không tìm thấy', `Mã <b>${code}</b> chưa được ai xử lý!`, 'info');
                 } else {
@@ -500,7 +707,7 @@
 
         function showOrderCodesList(codesStr, sessionName) {
             if(!codesStr) return Swal.fire('Trống', 'Ca này không có mã vận đơn nào được lưu.', 'info');
-            const codes = codesStr.split(', ');
+            const codes = codesStr.split(/[\n,]+/).map(c => c.trim()).filter(c => c);
             let html = `<div class="text-left text-sm max-h-64 overflow-y-auto bg-gray-50 p-4 border rounded shadow-inner"><ol class="list-decimal list-inside">`;
             codes.forEach(c => html += `<li class="border-b border-gray-200 py-1 text-gray-800 font-mono tracking-wide">${c}</li>`);
             html += `</ol></div>`;
@@ -509,7 +716,7 @@
 
 
         // ==========================================
-        // CÁ NHÂN
+        // MODULE CÁ NHÂN
         // ==========================================
         document.getElementById('orderCodes').addEventListener('input', (e) => {
             if (currentEmpId && activeSessions[currentEmpId] && !activeSessions[currentEmpId].isRemote) {
@@ -529,7 +736,6 @@
             const newCount = [...new Set(codes)].length;
             document.getElementById('liveCounter').innerText = `${newCount} đơn`;
             activeSessions[currentEmpId].orderCount = newCount;
-            localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
 
             fetch(`${API_URL}/active-sessions`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -540,7 +746,9 @@
         function togglePause() {
             if (!currentEmpId || !activeSessions[currentEmpId]) return;
             const session = activeSessions[currentEmpId];
-            if (session.isRemote) return;
+            
+            // ADMIN CÓ QUYỀN PAUSE CỦA MÁY KHÁC
+            if (session.isRemote && !isAdminAuthenticated) return;
 
             if (session.isPaused) {
                 session.isPaused = false;
@@ -552,7 +760,6 @@
                 session.startTime = null; 
             }
 
-            localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
             handleEmployeeChange();
 
             fetch(`${API_URL}/active-sessions`, {
@@ -563,10 +770,12 @@
 
         function handleEmployeeChange() {
             currentEmpId = document.getElementById('empSelect').value;
-            const sessionNameInput = document.getElementById('sessionNameInput');
+            const sessionSelect = document.getElementById('sessionSelect');
+            const shiftCoeff = document.getElementById('shiftCoefficient');
             const textArea = document.getElementById('orderCodes');
             const liveCounter = document.getElementById('liveCounter');
             const btnPause = document.getElementById('btnPause');
+            const btnEnd = document.getElementById('btnEnd');
 
             if (!currentEmpId) {
                 resetSessionUI(true);
@@ -576,28 +785,38 @@
 
             const session = activeSessions[currentEmpId];
             if (session) {
-                sessionNameInput.value = session.sessionName || '';
-                sessionNameInput.disabled = true;
+                sessionSelect.innerHTML = `<option value="">${session.sessionName}</option>`;
+                sessionSelect.disabled = true;
+                shiftCoeff.value = session.coefficient || 1;
+                shiftCoeff.disabled = true;
 
                 if (session.isRemote) {
                     document.getElementById('btnStart').disabled = true;
                     document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
-                    document.getElementById('btnEnd').disabled = true;
-                    document.getElementById('btnEnd').classList.add('opacity-50', 'cursor-not-allowed');
-                    btnPause.classList.add('hidden');
+                    
+                    if (isAdminAuthenticated) {
+                        btnEnd.disabled = false;
+                        btnEnd.classList.remove('opacity-50', 'cursor-not-allowed');
+                        btnPause.classList.remove('hidden');
+                        btnPause.innerText = session.isPaused ? '▶ Tiếp Tục (Quyền Admin)' : '⏸ Tạm Dừng (Quyền Admin)';
+                    } else {
+                        btnEnd.disabled = true;
+                        btnEnd.classList.add('opacity-50', 'cursor-not-allowed');
+                        btnPause.classList.add('hidden');
+                    }
 
                     textArea.disabled = true;
                     const statusText = session.isPaused ? "⏸ ĐANG TẠM DỪNG..." : "🔒 ĐANG THAO TÁC TRÊN THIẾT BỊ KHÁC...";
-                    textArea.value = `📢 CA LÀM: ${session.sessionName || '---'}\n\n${statusText}\n(Số đơn và thời gian sẽ cập nhật tự động bên dưới)`;
-                    textArea.className = "w-full flex-1 min-h-[300px] border-2 p-4 rounded-lg bg-blue-50 text-blue-800 font-bold text-center focus:outline-none resize-none";
+                    textArea.value = `📢 CA LÀM: ${session.sessionName || '---'} (Hệ số: ${session.coefficient})\n\n${statusText}\n(Số đơn và thời gian cập nhật tự động)`;
+                    textArea.className = "w-full flex-1 min-h-[300px] border-2 border-gray-200 p-4 rounded-lg bg-blue-50 text-blue-800 font-bold text-center focus:outline-none resize-none";
                     
                     liveCounter.innerText = `${session.orderCount || 0} đơn`;
                     liveCounter.className = "absolute bottom-4 right-4 bg-orange-600 text-white px-5 py-2 rounded-full font-black text-xl shadow-lg border border-white animate-pulse";
                 } else {
                     document.getElementById('btnStart').disabled = true;
                     document.getElementById('btnStart').classList.add('opacity-50', 'cursor-not-allowed');
-                    document.getElementById('btnEnd').disabled = false;
-                    document.getElementById('btnEnd').classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnEnd.disabled = false;
+                    btnEnd.classList.remove('opacity-50', 'cursor-not-allowed');
                     btnPause.classList.remove('hidden');
 
                     if (session.isPaused) {
@@ -640,11 +859,10 @@
             textArea.className = "w-full flex-1 min-h-[300px] border-2 border-gray-300 p-4 rounded-lg bg-gray-50 text-gray-800 focus:outline-none transition-colors resize-none font-mono";
             textArea.placeholder = "Bấm BẮT ĐẦU để kích hoạt ô dán mã cho nhân viên này...";
 
-            const sessionNameInput = document.getElementById('sessionNameInput');
-            if (sessionNameInput) {
-                sessionNameInput.value = '';
-                sessionNameInput.disabled = false;
-            }
+            const sessionSelect = document.getElementById('sessionSelect');
+            if (sessionSelect) { sessionSelect.disabled = false; renderShiftSelects(); }
+            const shiftCoeff = document.getElementById('shiftCoefficient');
+            if (shiftCoeff) { shiftCoeff.disabled = false; shiftCoeff.value = ''; }
 
             document.getElementById('liveCounter').innerText = "0 đơn";
             document.getElementById('sessionStatus').classList.remove('text-green-600');
@@ -655,50 +873,66 @@
 
         async function startSession() {
             if (!currentEmpId) return Swal.fire('Cảnh báo', 'Vui lòng chọn nhân viên!', 'warning');
-            const sessionNameInput = document.getElementById('sessionNameInput');
-            const sessionName = sessionNameInput.value.trim();
-            if (!sessionName) return Swal.fire('Cảnh báo', 'Bạn PHẢI NHẬP TÊN CA LÀM trước khi bấm Bắt Đầu!', 'warning');
-            if (activeSessions[currentEmpId] && activeSessions[currentEmpId].isRemote) return;
+            const sessionName = document.getElementById('sessionSelect').value;
+            let coefficient = parseFloat(document.getElementById('shiftCoefficient').value);
+            
+            if (!sessionName) return Swal.fire('Cảnh báo', 'Vui lòng Chọn Ca làm trước khi bấm Bắt Đầu!', 'warning');
+            if (isNaN(coefficient) || coefficient <= 0) return Swal.fire('Cảnh báo', 'Vui lòng nhập Hệ số hợp lệ (>0)!', 'warning');
+            
+            if (activeSessions[currentEmpId] && activeSessions[currentEmpId].isRemote && !isAdminAuthenticated) return;
 
             activeSessions[currentEmpId] = { 
                 originalStartTime: new Date(), startTime: new Date(), accumulatedTime: 0, 
-                isPaused: false, codes: '', sessionName: sessionName, orderCount: 0 
+                isPaused: false, codes: '', sessionName: sessionName, orderCount: 0, coefficient: coefficient 
             };
-            localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
             handleEmployeeChange();
 
-            fetch(`${API_URL}/active-sessions`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employeeId: currentEmpId, action: 'start', sessionData: { sessionName: sessionName, startTime: activeSessions[currentEmpId].startTime, orderCount: 0, isPaused: false, accumulatedTime: 0 } })
-            }).catch(()=>{});
+            try {
+                await fetch(`${API_URL}/active-sessions`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: currentEmpId, action: 'start', sessionData: { sessionName: sessionName, startTime: activeSessions[currentEmpId].startTime, orderCount: 0, isPaused: false, accumulatedTime: 0, coefficient: coefficient } })
+                });
+            } catch(e) {}
         }
 
         async function endSessionAndSave() {
-            if (!currentEmpId || !activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) return;
+            if (!currentEmpId || !activeSessions[currentEmpId]) return;
             const session = activeSessions[currentEmpId];
-            const codes = session.codes.split('\n').map(c => c.trim()).filter(c => c !== '');
-            const uniqueCodes = [...new Set(codes)];
-            const total_orders = uniqueCodes.length;
-
-            if (total_orders === 0) return Swal.fire('Lỗi', 'Chưa có mã vận đơn nào được nhập!', 'error');
-
-            const orderCodesString = uniqueCodes.join(', ');
-            const sessionEndTime = new Date();
             
+            const total_orders = session.isRemote ? session.orderCount : [...new Set(session.codes.split('\n').map(c => c.trim()).filter(c => c !== ''))].length;
+
+            if (total_orders === 0) {
+                if(session.isRemote && isAdminAuthenticated) {
+                    Swal.fire('Đã Hủy Ca', 'Ca trống của nhân viên đã bị Admin xóa bỏ khỏi hệ thống!', 'info');
+                    fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
+                    delete activeSessions[currentEmpId];
+                    handleEmployeeChange();
+                    return;
+                }
+                return Swal.fire('Lỗi', 'Chưa có mã vận đơn nào được nhập!', 'error');
+            }
+
+            const sessionEndTime = new Date();
             let totalSeconds = session.accumulatedTime || 0;
             if (!session.isPaused && session.startTime) totalSeconds += Math.floor((sessionEndTime - new Date(session.startTime)) / 1000);
             if (totalSeconds === 0) totalSeconds = 1;
 
-            let start_time_string = "---";
+            let start_time_string = null;
             const work_date = getLocalDateString(sessionEndTime);
-            
+
             if (session.originalStartTime) {
                 const stD = new Date(session.originalStartTime);
+                if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
+            } else if (session.startTime) {
+                const stD = new Date(session.startTime);
                 if (!isNaN(stD.getTime())) start_time_string = stD.toLocaleTimeString('vi-VN', {hour12: false});
             }
 
             const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
-            const averageTimePerOrder = (totalSeconds / total_orders).toFixed(1);
+            const coeff = session.coefficient || 1;
+            const total_value = total_orders * coeff;
+            
+            const performance = (total_value / totalSeconds).toFixed(4); 
             
             const hours = Math.floor(totalSeconds / 3600); const minutes = Math.floor((totalSeconds % 3600) / 60); const seconds = totalSeconds % 60;
             const empName = document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text;
@@ -708,33 +942,35 @@
             const logData = {
                 employee_id: currentEmpId, work_date, start_time: start_time_string, end_time, 
                 total_orders: Number(total_orders), total_time_seconds: Number(totalSeconds), 
-                average_time_per_order: Number(averageTimePerOrder),
-                session_name: session.sessionName, order_codes: orderCodesString
+                average_time_per_order: 0, 
+                total_value: Number(total_value), coefficient: Number(coeff),
+                session_name: session.sessionName, order_codes: session.codes || 'ADMIN_ENDED'
             };
 
-            // HIỂN THỊ POPUP CHI TIẾT SAU KHI LƯU (CẢ LOCAL & TRỰC TIẾP)
-            const successHtml = `<div class="text-left"><p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p><p class="mb-2"><strong>📦 Tổng đơn:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>⏳ Thời gian làm thực tế:</strong> ${hours}h ${minutes}p ${seconds}s</p><p class="mb-2"><strong>⏱️ Tốc độ trung bình:</strong> ${averageTimePerOrder} giây/đơn</p></div>`;
+            const successHtml = `<div class="text-left"><p class="mb-2"><strong>👤 Nhân viên:</strong> ${empName}</p><p class="mb-2"><strong>📦 Số lượng:</strong> ${total_orders} đơn <span class="text-red-500 font-bold">(Hệ số: x${coeff})</span></p><p class="mb-2"><strong>🏆 Tổng Giá trị KPI:</strong> ${total_value} điểm</p><p class="mb-2"><strong>⏳ Thời gian làm:</strong> ${hours}h ${minutes}p ${seconds}s</p><p class="mb-2"><strong>⚡ Hiệu suất:</strong> ${performance} điểm/s</p></div>`;
 
             try {
                 const res = await fetch(`${API_URL}/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logData) });
-                if (!res.ok) throw new Error('Lỗi máy chủ');
+                if (!res.ok) {
+                    const errBody = await res.json().catch(() => ({}));
+                    throw new Error(errBody.error || `Lỗi server ${res.status}`);
+                }
 
                 Swal.fire({ title: 'Thành công', icon: 'success', html: successHtml });
                 fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                 delete activeSessions[currentEmpId];
-                localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                 handleEmployeeChange();
                 fetchDailyTop();
-            } catch (e) {
+            } catch (err) {
                 try {
-                    await supabaseClient.from('productivity_logs').insert([logData]);
-                    Swal.fire({ title: 'Thành công (Lưu trực tiếp)', icon: 'success', html: successHtml });
+                    const { error } = await supabaseClient.from('productivity_logs').insert([logData]);
+                    if (error) throw error;
+                    Swal.fire({ title: 'Thành công (Lưu DB Trực tiếp)', icon: 'success', html: successHtml });
                     fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
                     delete activeSessions[currentEmpId];
-                    localStorage.setItem('warehouse_active_sessions', JSON.stringify(activeSessions));
                     handleEmployeeChange();
                     fetchDailyTop();
-                } catch (err) { Swal.fire('Lỗi', 'Không thể lưu vào CSDL: ' + err.message, 'error'); }
+                } catch(e) { Swal.fire('Lỗi', `Server: ${err.message}`, 'error'); }
             }
         }
 
@@ -779,9 +1015,10 @@
 
 
         // ==========================================
-        // LÀM VIỆC NHIỀU NHÓM
+        // MODULE NHÓM 
         // ==========================================
         window.toggleTempGroupSelection = function(empId) {
+            empId = String(empId); 
             if(tempGroupSelection.includes(empId)) {
                 tempGroupSelection = tempGroupSelection.filter(id => id !== empId);
             } else {
@@ -790,10 +1027,38 @@
             renderGroupCreatorList();
         };
 
+        window.selectTeamMembers = function(teamName) {
+            if(!teamName) return;
+            const members = allEmployees.filter(e => e.team_name === teamName && e.role !== 'Tổ');
+            
+            let addedCount = 0;
+            members.forEach(m => {
+                const idStr = String(m.id);
+                let isBusy = false;
+                Object.values(activeGroupSessions).forEach(g => {
+                    if(g.members.includes(idStr)) isBusy = true;
+                });
+                
+                if(!isBusy && !tempGroupSelection.includes(idStr)) {
+                    tempGroupSelection.push(idStr);
+                    addedCount++;
+                }
+            });
+
+            renderGroupCreatorList();
+            document.getElementById('quickSelectTeam').value = ''; 
+            
+            if(addedCount > 0) {
+                Swal.fire({toast: true, position: 'top-end', title: `Đã tự động chọn ${addedCount} người của ${teamName}`, icon: 'success', timer: 2500, showConfirmButton: false});
+            } else {
+                Swal.fire({toast: true, position: 'top-end', title: `${teamName} đang bận hết hoặc đã được chọn!`, icon: 'info', timer: 2500, showConfirmButton: false});
+            }
+        };
+
         function openGroupCreation() {
             document.getElementById('groupCreationArea').style.display = 'block';
             tempGroupSelection = []; 
-            document.getElementById('newGroupSessionName').value = '';
+            renderShiftSelects();
             renderGroupCreatorList();
         }
 
@@ -809,47 +1074,71 @@
             
             const busyEmpIdsInGroups = [];
             Object.values(activeGroupSessions).forEach(g => {
-                g.members.forEach(id => busyEmpIdsInGroups.push(id));
+                g.members.forEach(id => busyEmpIdsInGroups.push(String(id)));
             });
 
+            const select = document.getElementById('quickSelectTeam');
+            if(select) {
+                const currentVal = select.value;
+                const teamNames = [...new Set(allEmployees.filter(e => e.team_name).map(e => e.team_name))];
+                let selectHtml = '<option value="">⚡ Chọn nhanh theo Tổ</option>';
+                teamNames.forEach(t => { if(t) selectHtml += `<option value="${t}">${t}</option>`; });
+                select.innerHTML = selectHtml;
+                select.value = currentVal;
+            }
+
+            let creatorHtml = '';
             allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
-                const empIdStr = emp.id; 
+                const empIdStr = String(emp.id);
                 const isSelected = tempGroupSelection.includes(empIdStr);
                 const isBusyInOtherGroup = busyEmpIdsInGroups.includes(empIdStr);
-                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
+                const isBusyInInd = Boolean(activeSessions[empIdStr]);
+
+                const empNameStr = emp.name || 'Unknown';
+                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
                 const avatar = emp.avatar_url || defaultAvatar;
-                
+
                 let btnClass = "w-full text-left p-2.5 border rounded-xl transition-all bg-white hover:bg-indigo-50 border-gray-200 group-card flex items-center gap-3";
                 let cursor = "cursor-pointer";
-                let status = "";
-                
+
+                let statusHtml = "";
                 if (isBusyInOtherGroup) {
                     btnClass = "w-full text-left p-2.5 border rounded-xl bg-gray-100 border-gray-300 opacity-60 flex items-center gap-3 grayscale";
                     cursor = "cursor-not-allowed";
-                    status = "<div class='text-[10px] text-red-500 font-bold mt-0.5'>Đang bận nhóm khác</div>";
-                } else if (isSelected) {
-                    btnClass = "w-full text-left p-2.5 border-2 rounded-xl transition-all selected group-card border-indigo-500 bg-indigo-100 shadow-sm flex items-center gap-3 transform scale-[1.02]";
+                    statusHtml = "<div class='text-[10px] text-red-500 font-bold mt-0.5'>Đang bận nhóm khác</div>";
+                } else {
+                    if (isBusyInInd) {
+                        statusHtml = "<div class='text-[10px] text-blue-500 font-bold mt-0.5'>Đang chạy C.Nhân</div>";
+                    }
+                    if (isSelected) {
+                        btnClass = "w-full text-left p-2.5 border-2 rounded-xl transition-all selected group-card border-indigo-500 bg-indigo-100 shadow-sm flex items-center gap-3 transform scale-[1.02]";
+                    }
                 }
 
-                container.innerHTML += `
+                creatorHtml += `
                     <button type="button" class="${btnClass} ${cursor}" ${isBusyInOtherGroup ? 'disabled' : `onclick="toggleTempGroupSelection('${empIdStr}')"`}>
                         <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
                         <div class="overflow-hidden">
-                            <div class="font-bold text-gray-800 text-sm truncate" title="${emp.name}">${emp.name}</div>
-                            ${status}
+                            <div class="font-bold text-gray-800 text-sm truncate" title="${empNameStr}">${empNameStr}</div>
+                            ${statusHtml}
                         </div>
                     </button>`;
             });
+            container.innerHTML = creatorHtml;
         }
 
         function startCreatedGroup() {
             if (tempGroupSelection.length < 2) return Swal.fire('Cảnh báo', 'Nhóm phải có ít nhất 2 thành viên!', 'warning');
-            const sessionName = document.getElementById('newGroupSessionName').value.trim();
-            if (!sessionName) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên Nhóm / Ca làm!', 'warning');
+            const sessionName = document.getElementById('newGroupSessionSelect').value;
+            const coeff = parseFloat(document.getElementById('newGroupCoefficient').value);
+            
+            if (!sessionName) return Swal.fire('Cảnh báo', 'Vui lòng Chọn Tên Ca Nhóm!', 'warning');
+            if (isNaN(coeff) || coeff <= 0) return Swal.fire('Cảnh báo', 'Vui lòng nhập Hệ số nhóm hợp lệ!', 'warning');
 
             const groupId = 'group_' + Date.now();
             activeGroupSessions[groupId] = {
                 name: sessionName,
+                coefficient: coeff,
                 members: [...tempGroupSelection],
                 originalStartTime: new Date(),
                 startTime: new Date(),
@@ -858,9 +1147,26 @@
                 codes: ''
             };
             
-            localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
+            fetch(`${API_URL}/active-sessions`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    employeeId: 'GROUP_' + groupId, 
+                    action: 'start', 
+                    sessionData: {
+                        sessionName: sessionName, coefficient: coeff,
+                        startTime: activeGroupSessions[groupId].startTime,
+                        isPaused: false, accumulatedTime: 0, orderCount: 0,
+                        members: activeGroupSessions[groupId].members
+                    } 
+                })
+            }).catch(()=>{});
+
             closeGroupCreation();
             renderActiveGroups();
+            
+            setTimeout(() => {
+                document.getElementById('activeGroupsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         }
 
         function renderActiveGroups() {
@@ -873,71 +1179,136 @@
                 return;
             }
 
+            let groupsHtml = '';
             groupIds.forEach(groupId => {
                 const grp = activeGroupSessions[groupId];
-                
+
                 let memberAvatarsHtml = '';
                 grp.members.forEach(id => {
-                    const e = allEmployees.find(x => x.id === id);
+                    const e = allEmployees.find(x => String(x.id) === String(id));
                     if(e) {
-                        const ava = e.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.name)}&background=random`;
-                        memberAvatarsHtml += `<img src="${ava}" class="w-10 h-10 rounded-full border-2 border-white -ml-3 first:ml-0 shadow-md" title="${e.name}">`;
+                        const empNameStr = e.name || 'Unknown';
+                        const ava = e.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
+                        memberAvatarsHtml += `<img src="${ava}" class="w-10 h-10 rounded-full border-2 border-white -ml-3 first:ml-0 shadow-md" title="${empNameStr}">`;
                     }
                 });
 
-                const codesList = grp.codes.split('\n').map(c => c.trim()).filter(c => c !== '');
-                const totalOrders = [...new Set(codesList)].length;
+                const totalOrders = grp.isRemote ? (grp.orderCount || 0) : [...new Set((grp.codes||'').split('\n').map(c => c.trim()).filter(c => c !== ''))].length;
                 const perPerson = (totalOrders / grp.members.length).toFixed(1);
 
                 let bgColor = grp.isPaused ? 'bg-yellow-50/80' : 'bg-white';
                 let borderColor = grp.isPaused ? 'border-yellow-400' : 'border-indigo-200';
                 let textareaBg = grp.isPaused ? 'bg-yellow-100/50' : 'bg-indigo-50/50';
                 let btnPauseText = grp.isPaused ? '▶ Tiếp Tục Nhóm' : '⏸ Tạm Dừng Nhóm';
-                let btnPauseColor = grp.isPaused ? 'bg-green-500 hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600';
+
+                let canAdminOverride = grp.isRemote && isAdminAuthenticated;
+                if(canAdminOverride) btnPauseText += " (Admin)";
+
+                let isBtnDisabled = grp.isRemote && !canAdminOverride;
+
+                let btnPauseClass = isBtnDisabled ? 'bg-gray-400 cursor-not-allowed opacity-70 text-white px-5 py-2.5 rounded-lg font-bold shadow-md w-full md:w-auto' : (grp.isPaused ? 'bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto' : 'bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto');
+                let btnEndClass = isBtnDisabled ? 'bg-gray-400 cursor-not-allowed opacity-70 text-white px-5 py-2.5 rounded-lg font-bold shadow-md w-full md:w-auto flex-shrink-0' : 'bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto flex-shrink-0';
+
+                let textareaDisabled = (grp.isPaused || grp.isRemote) ? 'disabled' : '';
+                let textareaPlaceholder = grp.isRemote ? '🔒 Nhóm đang chạy trên MÁY KHÁC...' : (grp.isPaused ? 'Nhóm đang tạm dừng nghỉ ngơi...' : 'Dán mã vận đơn của cả nhóm vào đây...');
                 let statusDot = grp.isPaused ? '<span class="status-paused w-3 h-3"></span>' : '<span class="status-pulse w-3 h-3"></span>';
 
-                container.innerHTML += `
+                groupsHtml += `
                     <div class="${bgColor} rounded-2xl border-2 ${borderColor} shadow-lg overflow-hidden mb-6 transition-all">
                         <div class="p-5 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-50/50">
                             <div class="flex items-center gap-5">
                                 <div class="flex">${memberAvatarsHtml}</div>
                                 <div>
                                     <h3 class="font-black text-xl text-gray-800 flex items-center tracking-tight">${statusDot} [NHÓM] ${grp.name}</h3>
-                                    <div class="text-sm font-medium text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded inline-block mt-1">${grp.members.length} thành viên đang chạy</div>
+                                    <div class="text-sm font-medium text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded inline-block mt-1">${grp.members.length} thành viên đang chạy ${grp.isRemote ? '<b>(Máy khác)</b>' : ''} | Hệ số: x${grp.coefficient}</div>
                                 </div>
                             </div>
                             <div class="flex gap-2 w-full md:w-auto">
-                                <button onclick="toggleGroupPause('${groupId}')" class="${btnPauseColor} text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto">${btnPauseText}</button>
-                                <button onclick="endSpecificGroup('${groupId}')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition-colors w-full md:w-auto flex-shrink-0">🛑 Kết Thúc & Lưu Nhóm</button>
+                                <button ${isBtnDisabled ? 'disabled' : `onclick="toggleGroupPause('${groupId}')"`} class="${btnPauseClass}">${btnPauseText}</button>
+                                <button ${isBtnDisabled ? 'disabled' : `onclick="endSpecificGroup('${groupId}')"`} class="${btnEndClass}">🛑 Kết Thúc & Lưu Nhóm</button>
                             </div>
                         </div>
                         <div class="p-5 grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
-                            <div class="lg:col-span-3">
-                                <textarea id="code_${groupId}" rows="5" oninput="updateGroupCode('${groupId}', this.value)" ${grp.isPaused ? 'disabled' : ''} class="w-full border-2 ${grp.isPaused ? 'border-yellow-300' : 'border-indigo-300'} p-4 rounded-xl ${textareaBg} focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-800 font-mono tracking-wide resize-none transition-colors" placeholder="${grp.isPaused ? 'Nhóm đang tạm dừng nghỉ ngơi...' : 'Dán mã vận đơn của cả nhóm vào đây...'}">${grp.codes}</textarea>
+                            <div class="lg:col-span-3 flex flex-col gap-3">
+                                <div>
+                                    <div class="text-xs font-bold text-indigo-700 mb-1.5 uppercase tracking-wide">📋 Cách 1: Dán mã vận đơn</div>
+                                    <textarea id="code_${groupId}" rows="4" oninput="updateGroupCode('${groupId}', this.value)" ${textareaDisabled} class="w-full border-2 ${grp.isPaused ? 'border-yellow-300' : 'border-indigo-300'} p-4 rounded-xl ${textareaBg} focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-800 font-mono tracking-wide resize-none transition-colors" placeholder="${textareaPlaceholder}">${grp.codes || ''}</textarea>
+                                </div>
+                                <div class="flex items-center gap-3 bg-orange-50 border-2 border-orange-200 rounded-xl p-3">
+                                    <div class="text-xs font-bold text-orange-700 uppercase tracking-wide whitespace-nowrap">✏️ Cách 2: Nhập số lượng</div>
+                                    <input type="number" id="manualCount_${groupId}" min="0" placeholder="0" value="${totalOrders > 0 && !grp.codes ? totalOrders : ''}"
+                                        oninput="updateManualCount('${groupId}', this.value)"
+                                        ${textareaDisabled}
+                                        class="w-28 border-2 border-orange-300 p-2 rounded-lg font-black text-orange-700 text-center text-xl focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+                                    <span class="text-sm font-bold text-orange-600">đơn <span class="text-gray-400 font-normal">(nếu không dán mã)</span></span>
+                                </div>
                             </div>
                             <div class="lg:col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-sm text-center flex flex-col justify-center h-full">
                                 <div class="text-gray-500 font-bold text-xs uppercase tracking-widest mb-1">Thời gian chạy</div>
                                 <div id="timer_${groupId}" class="font-mono font-black text-3xl text-gray-700 mb-4 bg-gray-100 py-2 rounded-lg">00:00:00</div>
-                                <div class="text-4xl font-black text-indigo-700 mb-2">${totalOrders} <span class="text-base font-bold text-indigo-400">đơn</span></div>
-                                <div class="text-sm font-bold text-red-600 bg-red-50 rounded-lg py-1.5 border border-red-100">~ ${perPerson} đơn / người</div>
+                                <div class="text-4xl font-black text-indigo-700 mb-2"><span id="orderCount_${groupId}">${totalOrders}</span> <span class="text-base font-bold text-indigo-400">đơn</span></div>
+                                <div class="text-sm font-bold text-red-600 bg-red-50 rounded-lg py-1.5 border border-red-100">~ <span id="perPerson_${groupId}">${perPerson}</span> đơn / người</div>
                             </div>
                         </div>
                     </div>
                 `;
             });
+            container.innerHTML = groupsHtml;
+        }
+
+        function updateManualCount(groupId, value) {
+            const grp = activeGroupSessions[groupId];
+            if (!grp || grp.isRemote) return;
+            // Chỉ dùng số thủ công khi textarea mã vận đơn rỗng
+            const codesEl = document.getElementById(`code_${groupId}`);
+            const hasCodes = codesEl && codesEl.value.trim() !== '';
+            if (hasCodes) return;
+
+            const num = Math.max(0, parseInt(value) || 0);
+            grp.orderCount = num;
+            grp.manualCount = num;
+
+            const orderCountEl = document.getElementById(`orderCount_${groupId}`);
+            const perPersonEl = document.getElementById(`perPerson_${groupId}`);
+            if(orderCountEl) orderCountEl.textContent = num;
+            if(perPersonEl) perPersonEl.textContent = grp.members.length > 0 ? (num / grp.members.length).toFixed(1) : '0.0';
+
+            fetch(`${API_URL}/active-sessions`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'update', sessionData: { orderCount: num } })
+            }).catch(()=>{});
         }
 
         function updateGroupCode(groupId, newCodes) {
-            if(activeGroupSessions[groupId]) {
+            if(activeGroupSessions[groupId] && !activeGroupSessions[groupId].isRemote) {
                 activeGroupSessions[groupId].codes = newCodes;
-                localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
-                renderActiveGroups(); 
+
+                const codesList = newCodes.split('\n').map(c => c.trim()).filter(c => c !== '');
+                const newCount = [...new Set(codesList)].length;
+                activeGroupSessions[groupId].orderCount = newCount;
+                activeGroupSessions[groupId].manualCount = 0;
+
+                // Xóa ô manual khi có mã
+                const manualEl = document.getElementById(`manualCount_${groupId}`);
+                if(manualEl) manualEl.value = '';
+
+                const grp = activeGroupSessions[groupId];
+                const orderCountEl = document.getElementById(`orderCount_${groupId}`);
+                const perPersonEl = document.getElementById(`perPerson_${groupId}`);
+                if(orderCountEl) orderCountEl.textContent = newCount;
+                if(perPersonEl) perPersonEl.textContent = (newCount / grp.members.length).toFixed(1);
+
+                fetch(`${API_URL}/active-sessions`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'update', sessionData: { orderCount: newCount } })
+                }).catch(()=>{});
             }
         }
 
         function toggleGroupPause(groupId) {
             const grp = activeGroupSessions[groupId];
             if(!grp) return;
+            if(grp.isRemote && !isAdminAuthenticated) return;
 
             if (grp.isPaused) {
                 grp.isPaused = false;
@@ -948,20 +1319,36 @@
                 grp.accTime = (grp.accTime || 0) + Math.floor((new Date() - st) / 1000);
                 grp.startTime = null;
             }
-            localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
             renderActiveGroups();
+
+            fetch(`${API_URL}/active-sessions`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    employeeId: 'GROUP_' + groupId, action: 'update', sessionData: { isPaused: grp.isPaused, accumulatedTime: grp.accTime, startTime: grp.startTime } 
+                })
+            }).catch(()=>{});
         }
 
         async function endSpecificGroup(groupId) {
             const grp = activeGroupSessions[groupId];
             if(!grp) return;
 
-            const codesStr = grp.codes;
-            const codes = codesStr.split('\n').map(c => c.trim()).filter(c => c !== '');
-            const uniqueCodes = [...new Set(codes)];
-            const total_orders = uniqueCodes.length;
+            const codesCount = [...new Set((grp.codes||'').split('\n').map(c => c.trim()).filter(c => c !== ''))].length;
+            const manualEl = document.getElementById(`manualCount_${groupId}`);
+            const manualNum = manualEl ? (parseInt(manualEl.value) || 0) : (grp.manualCount || 0);
+            const total_orders = grp.isRemote ? grp.orderCount : (codesCount > 0 ? codesCount : manualNum);
+            const order_codes_str = codesCount > 0 ? [...new Set((grp.codes||'').split('\n').map(c=>c.trim()).filter(c=>c!==''))].join(', ') : `NHAP_TAY:${manualNum}`;
 
-            if (total_orders === 0) return Swal.fire('Lỗi', 'Nhóm này chưa nhập mã vận đơn nào!', 'error');
+            if (total_orders === 0) {
+                if(grp.isRemote && isAdminAuthenticated) {
+                    Swal.fire('Đã Hủy Nhóm', 'Nhóm trống đã bị Admin xóa bỏ khỏi hệ thống!', 'info');
+                    fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
+                    delete activeGroupSessions[groupId];
+                    renderActiveGroups();
+                    return;
+                }
+                return Swal.fire('Lỗi', 'Nhóm này chưa nhập mã vận đơn nào!', 'error');
+            }
 
             const sessionEndTime = new Date();
             let totalSeconds = grp.accTime || 0;
@@ -970,7 +1357,10 @@
 
             const numPeople = grp.members.length;
             const countPerPerson = Math.round(total_orders / numPeople); 
-            const avgTimePerOrder = Math.round(totalSeconds / countPerPerson);
+            const avgTimePerOrder = 0;
+            
+            const coeff = grp.coefficient || 1;
+            const total_value_per_person = countPerPerson * coeff;
             
             const work_date = getLocalDateString(sessionEndTime);
             
@@ -982,11 +1372,10 @@
 
             const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
             const sessionName = grp.name;
-            const orderCodesString = uniqueCodes.join(', ');
 
             Swal.fire({
                 title: `Kết thúc Nhóm: ${sessionName}?`,
-                html: `Tổng <b class="text-indigo-600 text-xl">${total_orders} đơn</b> chia đều cho <b class="text-indigo-600 text-xl">${numPeople} người</b>.<br><br>Mỗi người sẽ được cộng <b class="text-green-600 text-2xl">~${countPerPerson} đơn</b> vào lịch sử cá nhân.`,
+                html: `Tổng <b class="text-indigo-600 text-xl">${total_orders} đơn</b> chia đều cho <b class="text-indigo-600 text-xl">${numPeople} người</b>.<br><br>Mỗi người cộng <b class="text-green-600 text-xl">~${countPerPerson} đơn</b> (Hệ số: x${coeff})<br>👉 Tổng KPI: <b class="text-red-500 text-xl">${total_value_per_person} Giá trị</b>/người.`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Lưu & Giải tán Nhóm',
@@ -996,37 +1385,36 @@
                 if (result.isConfirmed) {
                     Swal.fire({ title: 'Đang chia đơn...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
-                    let hasError = false;
-                    
                     const logsArray = grp.members.map(empId => ({
-                        employee_id: empId, 
-                        work_date, 
-                        start_time: start_time_string, 
-                        end_time, 
-                        total_orders: Number(countPerPerson),
-                        total_time_seconds: Number(totalSeconds), 
-                        average_time_per_order: Number(avgTimePerOrder),
-                        session_name: `[NHÓM] ${sessionName}`, 
-                        order_codes: orderCodesString
+                        employee_id: empId, work_date, start_time: start_time_string, end_time, 
+                        total_orders: Number(countPerPerson), total_time_seconds: Number(totalSeconds), 
+                        average_time_per_order: 0, total_value: Number(total_value_per_person), coefficient: Number(coeff),
+                        session_name: `[NHÓM] ${sessionName}`, order_codes: order_codes_str
                     }));
 
-                    const successHtmlGroup = `<div class="text-left"><p class="mb-2"><strong>👥 Nhóm:</strong> ${sessionName}</p><p class="mb-2"><strong>📦 Tổng nhóm đóng:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>📈 Đã chia:</strong> ~${countPerPerson} đơn / người</p><p class="mb-2"><strong>⏱️ Tốc độ trung bình:</strong> ${avgTimePerOrder} giây/đơn</p></div>`;
+                    const successHtmlGroup = `<div class="text-left"><p class="mb-2"><strong>👥 Nhóm:</strong> ${sessionName}</p><p class="mb-2"><strong>📦 Tổng nhóm đóng:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>📈 Đã chia:</strong> ~${countPerPerson} đơn / người</p><p class="mb-2"><strong>🏆 KPI Giá trị:</strong> ${total_value_per_person} điểm/người</p></div>`;
 
                     try {
-                        const { error } = await supabaseClient.from('productivity_logs').insert(logsArray);
-                        if(error) hasError = true;
-                    } catch(err) { hasError = true; }
+                        const res = await fetch(`${API_URL}/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logsArray) });
+                        if (!res.ok) throw new Error('Lỗi máy chủ');
 
-                    if (hasError) {
-                        Swal.fire('Lưu ý', 'Đã lưu nhưng có một vài lỗi nhỏ với đường truyền', 'info');
-                    } else {
                         Swal.fire({ title: 'Thành công', icon: 'success', html: successHtmlGroup });
+                        fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
+                        
+                        delete activeGroupSessions[groupId];
+                        renderActiveGroups();
+                        fetchDailyTop(); 
+                    } catch (e) {
+                        try {
+                            const { error } = await supabaseClient.from('productivity_logs').insert(logsArray);
+                            if (error) throw error;
+                            Swal.fire({ title: 'Thành công (DB Trực tiếp)', icon: 'success', html: successHtmlGroup });
+                            fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
+                            delete activeGroupSessions[groupId];
+                            renderActiveGroups();
+                            fetchDailyTop();
+                        } catch(err) { Swal.fire('Lỗi nghiêm trọng', 'Không thể lưu vào CSDL', 'error'); }
                     }
-
-                    delete activeGroupSessions[groupId];
-                    localStorage.setItem('warehouse_group_sessions', JSON.stringify(activeGroupSessions));
-                    renderActiveGroups();
-                    fetchDailyTop(); 
                 }
             });
         }
@@ -1037,60 +1425,63 @@
         async function fetchDailyTop() {
             const today = getLocalDateString(new Date());
             try {
-                const { data, error } = await supabaseClient.from('productivity_logs')
-                    .select('total_orders, session_name, employees(name)')
-                    .eq('work_date', today)
-                    .limit(100000);
-                    
+                let res = await fetch(`${API_URL}/stats/top3?date=${today}`);
+                if(!res.ok) throw new Error();
+                const data = await res.json();
+                renderSmallTop(data.individual, 'sideTopInd', 'blue');
+                renderSmallTop(data.group, 'sideTopGrp', 'indigo');
+            } catch(e){
+                const { data, error } = await supabaseClient.from('productivity_logs').select('total_orders, session_name, employees(name)').eq('work_date', today);
                 if(error || !data) return;
-                
                 const indStats = {}; const grpStats = {};
                 data.forEach(log => {
                     if(!log.employees) return;
                     const name = log.employees.name;
-                    if (log.session_name && log.session_name.includes('[NHÓM]')) {
-                        grpStats[name] = (grpStats[name] || 0) + Number(log.total_orders);
+                    if (log.session_name && log.session_name.startsWith('[NHÓM]')) {
+                        grpStats[name] = (grpStats[name] || 0) + (log.total_orders || 0);
                     } else {
-                        indStats[name] = (indStats[name] || 0) + Number(log.total_orders);
+                        indStats[name] = (indStats[name] || 0) + (log.total_orders || 0);
                     }
                 });
-
                 const sortTop3 = (obj) => Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0,3).map(e => ({ name: e[0], total: e[1] }));
-                const topInd = sortTop3(indStats);
-                const topGrp = sortTop3(grpStats);
-
-                const renderTop = (list, containerId, colorTheme) => {
-                    const container = document.getElementById(containerId);
-                    if(!list || list.length === 0) {
-                        container.innerHTML = '<div class="text-center text-gray-400 text-xs py-2 font-medium">Chưa có đơn nào</div>';
-                        return;
-                    }
-                    container.innerHTML = '';
-                    list.forEach((item, idx) => {
-                        let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
-                        container.innerHTML += `
-                            <div class="flex justify-between items-center border-b border-gray-100 pb-1.5 pt-1.5 last:border-0 last:pb-0">
-                                <div class="flex items-center gap-2 truncate">
-                                    <span class="text-base drop-shadow-sm">${medal}</span>
-                                    <span class="font-bold text-gray-700 truncate text-sm" title="${item.name}">${item.name}</span>
-                                </div>
-                                <span class="font-black text-${colorTheme}-600 flex-shrink-0 text-base">${item.total}</span>
-                            </div>
-                        `;
-                    });
-                };
-
-                renderTop(topInd, 'sideTopInd', 'blue');
-                renderTop(topGrp, 'sideTopGrp', 'indigo');
-            } catch(e){}
+                renderSmallTop(sortTop3(indStats), 'sideTopInd', 'blue');
+                renderSmallTop(sortTop3(grpStats), 'sideTopGrp', 'indigo');
+            }
+        }
+        
+        function renderSmallTop(list, containerId, colorTheme) {
+            const container = document.getElementById(containerId);
+            if(!list || list.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 text-xs py-2 font-medium">Chưa có đơn nào</div>';
+                return;
+            }
+            let html = '';
+            list.forEach((item, idx) => {
+                let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
+                html += `
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-1.5 pt-1.5 last:border-0 last:pb-0">
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="text-base drop-shadow-sm">${medal}</span>
+                            <span class="font-bold text-gray-700 truncate text-sm" title="${item.name}">${item.name}</span>
+                        </div>
+                        <span class="font-black text-${colorTheme}-600 flex-shrink-0 text-base">${item.total}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
+        // ==========================================
+        // MODULE: DASHBOARD (Biểu đồ giữ nguyên Đơn)
+        // ==========================================
         const endD = new Date();
         const startD = new Date(); startD.setDate(startD.getDate() - 3);
         document.getElementById('filterStartDate_Ind').value = getLocalDateString(startD);
         document.getElementById('filterEndDate_Ind').value = getLocalDateString(endD);
         document.getElementById('filterStartDate_Grp').value = getLocalDateString(startD);
         document.getElementById('filterEndDate_Grp').value = getLocalDateString(endD);
+        document.getElementById('filterStartDate_Perf').value = getLocalDateString(startD);
+        document.getElementById('filterEndDate_Perf').value = getLocalDateString(endD);
         
         let empChartInstance = null; let empChartInstanceGrp = null; 
         let dailyChartInstance = null; let dailyChartInstanceGrp = null;
@@ -1102,131 +1493,237 @@
             const fStart = document.getElementById(`filterStartDate${suffix}`).value;
             const fEnd = document.getElementById(`filterEndDate${suffix}`).value;
             
-            let query = supabaseClient.from('productivity_logs')
-                .select('total_orders, session_name, work_date, total_time_seconds, employees(name)')
-                .limit(100000);
-
-            if (fStart) query = query.gte('work_date', fStart);
-            if (fEnd) query = query.lte('work_date', fEnd);
+            let dataEmp = [], dataDaily = [];
             
-            const { data, error } = await query;
-            if(error) return;
+            try {
+                let queryParam = `isGroup=${isGroup}`;
+                if(fStart) queryParam += `&startDate=${fStart}`;
+                if(fEnd) queryParam += `&endDate=${fEnd}`;
 
-            const filteredData = data.filter(log => {
-                const isLogGroup = log.session_name && log.session_name.includes('[NHÓM]');
-                return isGroup ? isLogGroup : !isLogGroup;
-            });
+                const resEmp = await fetch(`${API_URL}/stats/employees?${queryParam}`);
+                if(!resEmp.ok) throw new Error();
+                dataEmp = await resEmp.json();
+                
+                const resDaily = await fetch(`${API_URL}/stats/daily?${queryParam}`);
+                dataDaily = await resDaily.json();
+            } catch(e) {
+                let query = supabaseClient.from('productivity_logs').select('total_orders, session_name, work_date, employees(name)').limit(100000);
+                if (fStart) query = query.gte('work_date', fStart);
+                if (fEnd) query = query.lte('work_date', fEnd);
+                const { data, error } = await query;
+                if(error) return;
 
-            const empStats = {};
-            filteredData.forEach(log => {
-                if(log.employees) {
-                    const name = log.employees.name;
-                    empStats[name] = (empStats[name] || 0) + Number(log.total_orders);
-                }
-            });
+                const filteredData = data.filter(log => {
+                    const isLogGroup = log.session_name && log.session_name.startsWith('[NHÓM]');
+                    return isGroup ? isLogGroup : !isLogGroup;
+                });
+
+                const empStats = {};
+                filteredData.forEach(log => {
+                    if(log.employees) {
+                        const name = log.employees.name;
+                        empStats[name] = (empStats[name] || 0) + Number(log.total_orders || 0);
+                    }
+                });
+                dataEmp = Object.keys(empStats).map(name => ({ name, total: empStats[name] }));
+                
+                const dailyStats = {};
+                filteredData.forEach(log => {
+                    const d = log.work_date;
+                    dailyStats[d] = (dailyStats[d] || 0) + Number(log.total_orders || 0);
+                });
+                dataDaily = Object.keys(dailyStats).map(date => ({ work_date: date, total_daily_orders: dailyStats[date] })).sort((a, b) => a.work_date.localeCompare(b.work_date));
+            }
+            
             const ctxEmp = document.getElementById(`empChart${suffix}`);
             if(type === 'individual') {
                 if(empChartInstance) empChartInstance.destroy();
-                empChartInstance = new Chart(ctxEmp, { type: 'bar', data: { labels: Object.keys(empStats), datasets: [{ label: 'Số đơn cá nhân', data: Object.values(empStats), backgroundColor: '#3b82f6', borderRadius: 6 }] } });
+                empChartInstance = new Chart(ctxEmp, { type: 'bar', data: { labels: dataEmp.map(d => d.name), datasets: [{ label: 'Số lượng đơn cá nhân', data: dataEmp.map(d => d.total), backgroundColor: '#3b82f6', borderRadius: 4 }] } });
             } else {
                 if(empChartInstanceGrp) empChartInstanceGrp.destroy();
-                empChartInstanceGrp = new Chart(ctxEmp, { type: 'bar', data: { labels: Object.keys(empStats), datasets: [{ label: 'Đơn chia từ Nhóm', data: Object.values(empStats), backgroundColor: '#6366f1', borderRadius: 6 }] } });
+                empChartInstanceGrp = new Chart(ctxEmp, { type: 'bar', data: { labels: dataEmp.map(d => d.name), datasets: [{ label: 'Đơn chia từ Nhóm', data: dataEmp.map(d => d.total), backgroundColor: '#6366f1', borderRadius: 4 }] } });
             }
-            
-            const dailyStats = {};
-            filteredData.forEach(log => {
-                const d = log.work_date;
-                dailyStats[d] = (dailyStats[d] || 0) + Number(log.total_orders);
-            });
-            const sortedDates = Object.keys(dailyStats).sort();
             
             const ctxDaily = document.getElementById(`dailyChart${suffix}`);
             if(type === 'individual') {
                 if(dailyChartInstance) dailyChartInstance.destroy();
-                dailyChartInstance = new Chart(ctxDaily, { type: 'line', data: { labels: sortedDates, datasets: [{ label: 'Tổng kho (Cá nhân)', data: sortedDates.map(d=>dailyStats[d]), borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, borderWidth: 3 }] } });
+                dailyChartInstance = new Chart(ctxDaily, { type: 'line', data: { labels: dataDaily.map(d => d.work_date), datasets: [{ label: 'Tổng số lượng đơn (Cá nhân)', data: dataDaily.map(d => d.total_daily_orders), borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3 }] } });
             } else {
                 if(dailyChartInstanceGrp) dailyChartInstanceGrp.destroy();
-                dailyChartInstanceGrp = new Chart(ctxDaily, { type: 'line', data: { labels: sortedDates, datasets: [{ label: 'Tổng kho (Nhóm)', data: sortedDates.map(d=>dailyStats[d]), borderColor: '#8b5cf6', fill: true, backgroundColor: 'rgba(139, 92, 246, 0.1)', tension: 0.3, borderWidth: 3 }] } });
+                dailyChartInstanceGrp = new Chart(ctxDaily, { type: 'line', data: { labels: dataDaily.map(d => d.work_date), datasets: [{ label: 'Tổng số lượng đơn (Nhóm)', data: dataDaily.map(d => d.total_daily_orders), borderColor: '#8b5cf6', fill: true, backgroundColor: 'rgba(139, 92, 246, 0.1)', tension: 0.3 }] } });
             }
-
-            const sessionSelect = document.getElementById(`sessionLeaderboardSelect${suffix}`);
-            const currentSelection = sessionSelect.value;
-            sessionSelect.innerHTML = '<option value="">-- Chọn tên ca làm để phân tích --</option>';
-            
-            const uniqueSessionNames = [...new Set(filteredData.map(log => log.session_name).filter(Boolean))];
-            uniqueSessionNames.forEach(sn => {
-                const opt = document.createElement('option');
-                opt.value = sn; 
-                opt.text = isGroup ? sn.replace('[NHÓM] ', '') : sn;
-                sessionSelect.appendChild(opt);
-            });
-            if(uniqueSessionNames.includes(currentSelection)) sessionSelect.value = currentSelection;
-            
-            if(type === 'individual') globalSessionLogsForDashboard_Ind = filteredData;
-            else globalSessionLogsForDashboard_Grp = filteredData;
-            
-            renderSessionLeaderboard(type);
+            loadSessionRanking(type);
         }
 
-        function renderSessionLeaderboard(type = 'individual') {
+        async function loadSessionRanking(type) {
             const isGroup = type === 'group';
             const suffix = isGroup ? '_Grp' : '_Ind';
-            
-            const container = document.getElementById(`sessionLeaderboardContainer${suffix}`);
-            const selectedSession = document.getElementById(`sessionLeaderboardSelect${suffix}`).value;
-            
-            if(!selectedSession) {
-                container.innerHTML = `<div class="col-span-full text-center text-${isGroup ? 'indigo' : 'blue'}-400 italic py-8 border-2 border-dashed border-${isGroup ? 'indigo' : 'blue'}-200 rounded-xl bg-white/50">Vui lòng chọn tên ${isGroup ? 'nhóm' : 'ca'} ở danh sách trên để xem bảng xếp hạng tốc độ.</div>`;
+            const sessionName = document.getElementById(`sessionRankSelect${suffix}`).value;
+            const container = document.getElementById(`sessionRankList${suffix}`);
+
+            if (!sessionName) { container.innerHTML = ''; return; }
+
+            container.innerHTML = '<div class="text-center text-gray-400 italic py-4">Đang tải...</div>';
+
+            const fStart = document.getElementById(`filterStartDate${suffix}`).value;
+            const fEnd = document.getElementById(`filterEndDate${suffix}`).value;
+
+            let queryParam = `isGroup=${isGroup}`;
+            if(fStart) queryParam += `&startDate=${fStart}`;
+            if(fEnd) queryParam += `&endDate=${fEnd}`;
+
+            let logs = [];
+            try {
+                const res = await fetch(`${API_URL}/stats/sessions?${queryParam}`);
+                if(!res.ok) throw new Error();
+                logs = await res.json();
+            } catch(e) {
+                let query = supabaseClient.from('productivity_logs').select('session_name, total_orders, total_time_seconds, employees(name)').limit(100000);
+                if(fStart) query = query.gte('work_date', fStart);
+                if(fEnd) query = query.lte('work_date', fEnd);
+                const { data, error } = await query;
+                if(error) { container.innerHTML = '<div class="text-red-500 p-4">Lỗi tải dữ liệu</div>'; return; }
+                logs = (data || []).filter(log => {
+                    const isLogGroup = log.session_name && log.session_name.startsWith('[NHÓM]');
+                    return isGroup ? isLogGroup : !isLogGroup;
+                });
+            }
+
+            const targetSession = isGroup ? `[NHÓM] ${sessionName}` : sessionName;
+            const filtered = logs.filter(log => log.session_name === targetSession);
+
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-400 italic py-6 border-2 border-dashed rounded-xl">Chưa có dữ liệu cho ca "<b>${sessionName}</b>" trong khoảng thời gian này.</div>`;
                 return;
             }
 
-            const dataToUse = isGroup ? globalSessionLogsForDashboard_Grp : globalSessionLogsForDashboard_Ind;
-            const logsInSession = dataToUse.filter(log => log.session_name === selectedSession && log.employees);
-            const empStats = {};
-            
-            logsInSession.forEach(log => {
-                const empName = log.employees.name;
-                if(!empStats[empName]) empStats[empName] = { name: empName, totalOrders: 0, totalSeconds: 0 };
-                empStats[empName].totalOrders += Number(log.total_orders);
-                empStats[empName].totalSeconds += Number(log.total_time_seconds);
+            const stats = {};
+            filtered.forEach(log => {
+                if(!log.employees) return;
+                const name = log.employees.name;
+                if(!stats[name]) stats[name] = { totalOrders: 0, totalTime: 0 };
+                stats[name].totalOrders += Number(log.total_orders || 0);
+                stats[name].totalTime += Number(log.total_time_seconds || 0);
             });
 
-            const rankingList = Object.values(empStats).map(stat => {
-                let avg = 0;
-                if(stat.totalOrders > 0) avg = (stat.totalSeconds / stat.totalOrders).toFixed(1);
-                return { ...stat, avgSpeed: parseFloat(avg) };
+            const ranked = Object.entries(stats).map(([name, s]) => ({
+                name, totalOrders: s.totalOrders, totalTime: s.totalTime,
+                secsPerOrder: (s.totalTime > 0 && s.totalOrders > 0) ? s.totalTime / s.totalOrders : Infinity
+            })).sort((a, b) => a.secsPerOrder - b.secsPerOrder);
+
+            const themeColor = isGroup ? 'indigo' : 'blue';
+            let html = '';
+            ranked.forEach((emp, i) => {
+                const crown = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span class="text-lg font-bold text-gray-400">#${i+1}</span>`;
+                const secStr = emp.secsPerOrder === Infinity ? '--' : emp.secsPerOrder.toFixed(1) + 's/đơn';
+                const hh = Math.floor(emp.totalTime/3600), mm = Math.floor((emp.totalTime%3600)/60), ss = emp.totalTime%60;
+                const timeStr = emp.totalTime > 0 ? `${hh}h ${mm}p ${ss}s` : '--';
+                const borderBg = i===0 ? 'border-yellow-400 bg-yellow-50' : i===1 ? 'border-gray-400 bg-gray-100' : i===2 ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-white';
+                html += `
+                    <div class="flex items-center justify-between p-3 rounded-xl border ${borderBg} shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl w-8 text-center">${crown}</div>
+                            <div>
+                                <div class="font-black text-gray-800">${emp.name}</div>
+                                <div class="text-xs text-gray-500">${emp.totalOrders} đơn | Tổng TG: ${timeStr}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-black text-xl text-${themeColor}-600">${secStr}</div>
+                            <div class="text-xs text-gray-500">Giây/Đơn</div>
+                        </div>
+                    </div>
+                `;
             });
+            container.innerHTML = html;
+        }
 
-            const validRanking = rankingList.filter(e => e.totalOrders > 0).sort((a, b) => a.avgSpeed - b.avgSpeed);
+        // ==========================================
+        // 7. BXH HIỆU SUẤT TỔNG HỢP MỚI
+        // ==========================================
+        async function loadPerformanceBoard() {
+            const fStart = document.getElementById(`filterStartDate_Perf`).value;
+            const fEnd = document.getElementById(`filterEndDate_Perf`).value;
+            let dataInd = [], dataGrp = [];
 
-            if(validRanking.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center text-red-500 italic py-4">Chưa có ai đóng đơn nào trong ca này!</div>';
-                return;
+            try {
+                let queryParam = ``;
+                if(fStart) queryParam += `startDate=${fStart}&`;
+                if(fEnd) queryParam += `endDate=${fEnd}`;
+                const res = await fetch(`${API_URL}/stats/performance?${queryParam}`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                dataInd = data.individual;
+                dataGrp = data.group;
+            } catch(e) {
+                let query = supabaseClient.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)').limit(100000);
+                if (fStart) query = query.gte('work_date', fStart);
+                if (fEnd) query = query.lte('work_date', fEnd);
+                const { data, error } = await query;
+                if(error) return;
+
+                const indStats = {}; const grpStats = {};
+                data.forEach(log => {
+                    if(!log.employees) return;
+                    const empName = log.employees.name;
+                    const isGroup = log.session_name && log.session_name.startsWith('[NHÓM]');
+                    let target = isGroup ? grpStats : indStats;
+                    
+                    if (!target[empName]) target[empName] = { value: 0, time: 0 };
+                    let val = log.total_value != null ? log.total_value : (log.total_orders * (log.coefficient || 1));
+                    target[empName].value += val;
+                    target[empName].time += (log.total_time_seconds || 1); 
+                });
+
+                const calcPerf = (obj) => Object.entries(obj).map(e => {
+                    let perf = ((e[1].value / e[1].time)*3600).toFixed(1); 
+                    return { name: e[0], performance: parseFloat(perf), totalValue: e[1].value };
+                }).sort((a,b) => b.performance - a.performance);
+                
+                dataInd = calcPerf(indStats);
+                dataGrp = calcPerf(grpStats);
             }
 
-            container.innerHTML = '';
-            validRanking.forEach((emp, index) => {
+            renderPerfList(dataInd, 'perfContainer_Ind', 'blue');
+            renderPerfList(dataGrp, 'perfContainer_Grp', 'indigo');
+        }
+
+        function renderPerfList(list, containerId, themeColor) {
+            const container = document.getElementById(containerId);
+            if(!list || list.length === 0) {
+                container.innerHTML = `<div class="text-center text-${themeColor}-400 italic py-8 border-2 border-dashed border-${themeColor}-200 rounded-xl bg-white/50">Chưa có dữ liệu hiệu suất trong khoảng thời gian này.</div>`;
+                return;
+            }
+            let html = '';
+            list.forEach((emp, index) => {
                 let crown = ''; let bg = 'bg-white'; let border = 'border-gray-200';
                 if(index === 0) { crown = '🥇'; bg = 'bg-yellow-50'; border = 'border-yellow-400'; }
                 else if(index === 1) { crown = '🥈'; bg = 'bg-gray-100'; border = 'border-gray-400'; }
                 else if(index === 2) { crown = '🥉'; bg = 'bg-orange-50'; border = 'border-orange-300'; }
-                else { crown = `#${index + 1}`; }
+                else { crown = `<span class="text-xl font-bold text-gray-400">#${index + 1}</span>`; }
 
-                const themeColor = isGroup ? 'indigo' : 'blue';
-
-                container.innerHTML += `
-                    <div class="p-5 rounded-2xl border-2 ${border} ${bg} shadow-md relative overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-lg">
-                        <div class="absolute top-0 right-0 bg-${themeColor}-600 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm">Tổng: ${emp.totalOrders} đơn</div>
-                        <div class="text-3xl mb-2 drop-shadow-sm">${crown}</div>
-                        <div class="font-black text-gray-800 text-xl line-clamp-1 mb-1" title="${emp.name}">${emp.name}</div>
-                        <div class="mt-3 text-red-600 font-black text-2xl">${emp.avgSpeed} <span class="text-sm font-bold text-gray-500">giây / đơn</span></div>
+                html += `
+                    <div class="p-4 rounded-xl border ${border} ${bg} shadow-sm relative flex justify-between items-center transition-transform hover:-translate-y-1 hover:shadow-md">
+                        <div class="flex items-center gap-4">
+                            <div class="text-2xl w-8 text-center">${crown}</div>
+                            <div>
+                                <div class="font-black text-gray-800 text-lg line-clamp-1" title="${emp.name}">${emp.name}</div>
+                                <div class="text-xs font-bold text-gray-500">Tổng KPI: ${emp.totalValue} điểm</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-${themeColor}-600 font-black text-2xl">${emp.performance}</div>
+                            <div class="text-xs font-bold text-gray-500">Điểm / Giờ</div>
+                        </div>
                     </div>
                 `;
             });
+            container.innerHTML = html;
         }
 
+
         // ==========================================
-        // LỊCH SỬ 
+        // LỊCH SỬ  (XÓA CA CHO ADMIN)
         // ==========================================
         let currentHistoryEmpId = null;
 
@@ -1243,28 +1740,33 @@
         async function fetchAndRenderHistory() {
             const date = document.getElementById('historyDateFilter').value;
             try {
-                let query = supabaseClient.from('productivity_logs')
-                    .select('*')
-                    .eq('employee_id', currentHistoryEmpId)
-                    .order('created_at', { ascending: false })
-                    .limit(10000);
-
-                if (date) query = query.eq('work_date', date);
-
-                const { data, error } = await query;
-                if (error) throw error;
+                let data = [];
+                try {
+                    const res = await fetch(`${API_URL}/history?employee_id=${currentHistoryEmpId}&date=${date}`);
+                    if (!res.ok) throw new Error("Lỗi mạng");
+                    data = await res.json();
+                } catch(e) {
+                    let query = supabaseClient.from('productivity_logs').select('*').eq('employee_id', currentHistoryEmpId).order('created_at', { ascending: false }).limit(10000);
+                    if (date) query = query.eq('work_date', date);
+                    const { data: dbData, error } = await query;
+                    if(error) throw error;
+                    data = dbData;
+                }
 
                 const tbody = document.getElementById('historyTableBody');
                 tbody.innerHTML = '';
-                let totalOrders = 0;
-                let totalTimeAllSeconds = 0; 
+                let totalOrders = 0; let totalValueAll = 0; let totalTimeAllSeconds = 0; 
 
                 if(!data || data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" class="text-center p-10 text-gray-500 italic font-medium text-lg bg-gray-50">😴 Chưa có dữ liệu làm việc trong ngày này.</td></tr>';
-                    document.getElementById('historyTotalOrders').innerHTML = `Tổng: 0 đơn`;
+                    document.getElementById('historyTotalOrders').innerHTML = `Tổng: 0 điểm`;
                 } else {
                     data.forEach(log => {
                         totalOrders += Number(log.total_orders);
+                        let tVal = Number(log.total_value);
+                        if(isNaN(tVal) || log.total_value == null) tVal = (Number(log.total_orders) * (Number(log.coefficient)||1));
+                        totalValueAll += tVal;
+
                         let totalTime = Number(log.total_time_seconds) || 0;
                         if (!totalTime || totalTime === 0) {
                             const parseSec = (ts) => { if(!ts) return 0; const p = ts.split(':').map(Number); return p.length===3 ? p[0]*3600+p[1]*60+p[2] : 0; };
@@ -1275,29 +1777,29 @@
 
                         const hours = Math.floor(totalTime / 3600); const minutes = Math.floor((totalTime % 3600) / 60); const seconds = totalTime % 60;
                         const timeStr = totalTime > 0 ? `${hours}h ${minutes}p ${seconds}s` : '--';
-
-                        let avgTime = Number(log.average_time_per_order);
-                        if (!avgTime || avgTime === 0) avgTime = Number(log.total_orders) > 0 ? (totalTime / Number(log.total_orders)).toFixed(1) : 0;
-                        const avgTimeStr = avgTime > 0 ? `${avgTime}s` : '--';
+                        const secsPerOrder = (totalTime > 0 && log.total_orders > 0) ? (totalTime / log.total_orders).toFixed(1) + 's' : '--';
 
                         const sessionName = log.session_name ? log.session_name : '---';
                         const isGroup = sessionName.startsWith('[NHÓM]');
                         const styleName = isGroup ? `<span class="bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded text-xs font-bold mr-2 border border-indigo-200">Nhóm</span> ${sessionName.replace('[NHÓM] ', '')}` : sessionName;
 
                         const safeSessionName = sessionName.replace(/'/g, "\\'");
-                        const safeCodes = log.order_codes ? log.order_codes.replace(/'/g, "\\'") : '';
+                        const safeCodes = log.order_codes ? log.order_codes.replace(/\r?\n/g, '\\n').replace(/'/g, "\\'") : '';
+
+                        const delBtn = isAdminAuthenticated ? `<button onclick="deleteLog('${log.id}')" class="bg-white border border-red-300 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 shadow-sm transition-colors whitespace-nowrap ml-2">🗑️ Xóa</button>` : '';
 
                         tbody.innerHTML += `
                             <tr class="hover:bg-blue-50 transition-colors">
                                 <td class="p-4 border-b border-gray-100 text-gray-600 whitespace-nowrap">${log.work_date}</td>
                                 <td class="p-4 border-b border-gray-100 font-bold text-gray-800">${styleName}</td>
-                                <td class="p-4 border-b border-gray-100 text-gray-500 whitespace-nowrap">${log.start_time}</td>
-                                <td class="p-4 border-b border-gray-100 text-gray-500 whitespace-nowrap">${log.end_time}</td>
-                                <td class="p-4 border-b border-gray-100 font-black text-green-600 text-right text-lg whitespace-nowrap">+ ${log.total_orders}</td>
+                                <td class="p-4 border-b border-gray-100 font-bold text-center text-lg whitespace-nowrap">${log.total_orders}</td>
+                                <td class="p-4 border-b border-gray-100 text-center font-bold text-red-600 whitespace-nowrap">x${log.coefficient || 1}</td>
+                                <td class="p-4 border-b border-gray-100 font-black text-green-600 text-right text-lg whitespace-nowrap">+ ${tVal}</td>
                                 <td class="p-4 border-b border-gray-100 text-gray-600 text-center whitespace-nowrap">${timeStr}</td>
-                                <td class="p-4 border-b border-gray-100 text-gray-800 text-center font-bold whitespace-nowrap">${avgTimeStr}</td>
+                                <td class="p-4 border-b border-gray-100 text-center font-bold text-purple-700 whitespace-nowrap">${secsPerOrder}</td>
                                 <td class="p-4 border-b border-gray-100 text-center">
-                                    <button onclick="showOrderCodesList('${safeCodes}', '${safeSessionName}')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-colors whitespace-nowrap">👁️ Chi tiết</button>
+                                    <button onclick="showOrderCodesList('${safeCodes}', '${safeSessionName}')" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-colors whitespace-nowrap">👁️ Xem</button>
+                                    ${delBtn}
                                 </td>
                             </tr>
                         `;
@@ -1305,23 +1807,52 @@
                     
                     const tH = Math.floor(totalTimeAllSeconds / 3600);
                     const tM = Math.floor((totalTimeAllSeconds % 3600) / 60);
-                    document.getElementById('historyTotalOrders').innerHTML = `<span class="text-sm font-bold text-gray-500 block uppercase tracking-wider mb-1">Tổng thời gian chạy: <span class="text-gray-800">${tH}h ${tM}phút</span></span> <span class="text-green-600 block">Sản lượng: ${totalOrders} đơn</span>`;
+                    document.getElementById('historyTotalOrders').innerHTML = `<span class="text-sm font-bold text-gray-500 block uppercase tracking-wider mb-1">Tổng T.Gian: <span class="text-gray-800">${tH}h ${tM}p</span> | SL gốc: ${totalOrders} đơn</span> <span class="text-green-600 block">Tổng KPI: ${totalValueAll} điểm</span>`;
                 }
             } catch (error) {}
+        }
+
+        async function deleteLog(logId) {
+            const result = await Swal.fire({
+                title: `Xác nhận xóa Ca làm?`, text: 'Sản lượng của nhân viên trong ca này sẽ bị trừ đi vĩnh viễn!',
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Đồng ý Xóa', cancelButtonText: 'Hủy', confirmButtonColor: '#d33'
+            });
+            if (!result.isConfirmed) return;
+
+            try {
+                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                try {
+                    const res = await fetch(`${API_URL}/logs/${logId}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error('Lỗi máy chủ');
+                } catch(e) {
+                    const { error } = await supabaseClient.from('productivity_logs').delete().eq('id', logId);
+                    if(error) throw error;
+                }
+                
+                Swal.fire('Thành công', 'Đã xóa lịch sử ca làm', 'success');
+                fetchAndRenderHistory();
+                fetchDailyTop();
+            } catch(e) { Swal.fire('Lỗi', e.message, 'error'); }
         }
 
         // ==========================================
         // SƠ ĐỒ KHO VÀ NHÂN SỰ
         // ==========================================
         async function fetchEmployees() {
-            const { data, error } = await supabaseClient.from('employees').select('*').order('created_at', { ascending: false });
-            if(error) return [];
-            allEmployees = data;
-            return data;
+            try {
+                const res = await fetch(`${API_URL}/employees`);
+                if (!res.ok) throw new Error('Lỗi API nhân viên');
+                allEmployees = await res.json();
+                return allEmployees;
+            } catch (error) { 
+                const { data } = await supabaseClient.from('employees').select('*').order('created_at', { ascending: false });
+                allEmployees = data || [];
+                return allEmployees; 
+            }
         }
 
-        async function renderOrgChart() {
-            await fetchEmployees();
+        async function renderOrgChart(skipFetch = false) {
+            if(!skipFetch) await fetchEmployees();
             const container = document.getElementById('orgContainer');
             container.innerHTML = '';
 
@@ -1344,11 +1875,12 @@
                 const cardRow = document.createElement('div');
                 cardRow.className = 'flex flex-wrap justify-center gap-4';
                 managers.forEach(manager => {
-                    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(manager.name)}&background=random`;
+                    const empNameStr = manager.name || 'Unknown';
+                    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
                     const avatar = manager.avatar_url || defaultAvatar;
                     const cardDiv = document.createElement('div');
                     cardDiv.className = 'org-card';
-                    cardDiv.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${manager.name}</div><div class="text-xs text-purple-600 font-semibold mt-1">${manager.role}</div>`;
+                    cardDiv.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${empNameStr}</div><div class="text-xs text-purple-600 font-semibold mt-1">${manager.role}</div>`;
                     cardRow.appendChild(cardDiv);
                 });
                 managerSection.appendChild(cardRow);
@@ -1378,11 +1910,12 @@
 
                     const lead = teamLeads.find(e => e.team_name === teamName);
                     if (lead) {
+                        const empNameStr = lead.name || 'Unknown';
                         const leadCardWrapper = document.createElement('div');
                         leadCardWrapper.className = 'team-lead-card cursor-pointer hover:shadow-md hover:bg-blue-100 transition-all';
-                        const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name)}&background=random`;
+                        const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
                         const avatar = lead.avatar_url || defaultAvatar;
-                        leadCardWrapper.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800 text-sm">${lead.name}</div><div class="text-xs text-blue-600 font-semibold">${lead.role}</div>`;
+                        leadCardWrapper.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800 text-sm">${empNameStr}</div><div class="text-xs text-blue-600 font-semibold">${lead.role}</div>`;
                         leadCardWrapper.onclick = () => showEmployeeDetails(JSON.stringify(lead));
                         teamBox.appendChild(leadCardWrapper);
                     } else {
@@ -1398,11 +1931,12 @@
 
                     if (teamMembers.length > 0) {
                         teamMembers.forEach(member => {
-                            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`;
+                            const empNameStr = member.name || 'Unknown';
+                            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
                             const avatar = member.avatar_url || defaultAvatar;
                             const memberCard = document.createElement('div');
                             memberCard.className = 'team-member-card cursor-pointer hover:shadow-md hover:bg-blue-50 transition-all';
-                            memberCard.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${member.name}</div><div class="text-xs text-gray-600">Nhân viên</div>`;
+                            memberCard.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${empNameStr}</div><div class="text-xs text-gray-600">Nhân viên</div>`;
                             memberCard.onclick = () => showEmployeeDetails(JSON.stringify(member));
                             membersContainer.appendChild(memberCard);
                         });
@@ -1430,11 +1964,12 @@
                 const memberDiv = document.createElement('div');
                 memberDiv.className = 'flex flex-wrap justify-center gap-4';
                 unassignedEmployees.forEach(member => {
-                    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`;
+                    const empNameStr = member.name || 'Unknown';
+                    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
                     const avatar = member.avatar_url || defaultAvatar;
                     const cardDiv = document.createElement('div');
                     cardDiv.className = 'team-member-card opacity-50 cursor-pointer hover:opacity-75 transition-all';
-                    cardDiv.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${member.name}</div><div class="text-xs text-gray-600">Chưa gán tổ</div>`;
+                    cardDiv.innerHTML = `<img src="${avatar}"><div class="font-bold text-gray-800">${empNameStr}</div><div class="text-xs text-gray-600">Chưa gán tổ</div>`;
                     cardDiv.onclick = () => showEmployeeDetails(JSON.stringify(member));
                     memberDiv.appendChild(cardDiv);
                 });
@@ -1444,8 +1979,16 @@
             container.appendChild(hierarchy);
         }
 
-        async function loadEmployeesForSelect() {
+        async function refreshAllViews() {
             await fetchEmployees();
+            loadEmployeesTable(true);
+            loadEmployeesForSelect(true);
+            renderOrgChart(true);
+        }
+
+        async function loadEmployeesForSelect(skipFetch = false) {
+            if(!skipFetch) await fetchEmployees();
+            await fetchShifts();
             const select = document.getElementById('empSelect');
             const savedId = select.value; 
             select.innerHTML = '<option value="">-- Bấm để chọn nhân viên --</option>';
@@ -1459,9 +2002,10 @@
                 let status = "⚪ Trống";
                 if(isWorking) status = isPaused ? `⏸ ĐANG DỪNG ${isRem}` : `🟢 ĐANG LÀM ${isRem}`;
                 
+                const empNameStr = emp.name || 'Unknown';
                 const option = document.createElement('option');
                 option.value = emp.id;
-                option.text = `${emp.name} (${emp.role}) - [${status}]`;
+                option.text = `${empNameStr} (${emp.role}) - [${status}]`;
                 
                 if(isWorking) {
                     option.style.fontWeight = "bold";
@@ -1479,15 +2023,17 @@
                 const currentValue = teamLeadSelect.value;
                 teamLeadSelect.innerHTML = '<option value="">-- Tổ trưởng quản lý --</option>';
                 allEmployees.filter(e => e.role && e.role.includes('Tổ trưởng')).forEach(lead => {
+                    const empNameStr = lead.name || 'Unknown';
                     const opt = document.createElement('option');
                     opt.value = lead.id;
-                    opt.text = lead.name;
+                    opt.text = empNameStr;
                     teamLeadSelect.appendChild(opt);
                 });
                 teamLeadSelect.value = currentValue;
             }
             renderEmployeeListInInput();
             renderGroupCreatorList(); 
+            checkAdminUI();
         }
 
         function selectEmployee(empId) {
@@ -1505,6 +2051,7 @@
             
             const teamNames = [...new Set(allEmployees.filter(e => e.team_name).map(e => e.team_name))];
             teamNames.forEach(teamName => {
+                if(!teamName) return;
                 const opt = document.createElement('option');
                 opt.value = teamName;
                 opt.text = teamName;
@@ -1529,16 +2076,18 @@
         function renderEmployeeListInInput() {
             const container = document.getElementById('employeeList');
             if (!container) return;
-            container.innerHTML = '';
 
+            let html = '';
             allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
                 const isWorking = Boolean(activeSessions[emp.id]);
                 const isPaused = isWorking && activeSessions[emp.id].isPaused;
                 const isRem = (isWorking && activeSessions[emp.id].isRemote);
                 const isSelected = String(currentEmpId) === String(emp.id);
-                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
+
+                const empNameStr = emp.name || 'Unknown';
+                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
                 const avatar = emp.avatar_url || defaultAvatar;
-                
+
                 let badge = '<span>Rảnh</span>';
                 if(isWorking) {
                     if(isPaused) {
@@ -1548,35 +2097,38 @@
                     }
                 }
 
-                container.innerHTML += `
+                html += `
                     <button type="button" onclick="selectEmployee('${emp.id}')" class="w-full text-left p-4 border rounded-lg transition-colors ${isSelected ? 'border-blue-400 bg-blue-50 ring-1' : 'border-gray-200 bg-white hover:bg-gray-50'}">
                         <div class="flex items-center gap-3">
                             <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-gray-200">
-                            <div class="flex-1">
-                                <div class="font-bold text-gray-800">${emp.name}</div>
+                            <div class="flex-1 overflow-hidden">
+                                <div class="font-bold text-gray-800 truncate" title="${empNameStr}">${empNameStr}</div>
                                 <div class="text-xs text-gray-500">${emp.role}</div>
                             </div>
-                            <div class="flex items-center gap-2 text-xs font-bold text-gray-500">
+                            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 flex-shrink-0">
                                 ${badge}
                             </div>
                         </div>
                     </button>`;
             });
+            container.innerHTML = html;
         }
 
-        async function loadEmployeesTable() {
-            const data = await fetchEmployees();
+        async function loadEmployeesTable(skipFetch = false) {
+            if(!skipFetch) await fetchEmployees();
             const tbody = document.getElementById('empTableBody');
-            tbody.innerHTML = '';
-            data.filter(emp => emp.role !== 'Tổ').forEach(emp => {
-                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
+            if(!tbody) return;
+            let html = '';
+            allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
+                const empNameStr = emp.name || 'Unknown';
+                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
                 const avatar = emp.avatar_url || defaultAvatar;
-                const safeName = emp.name.replace(/'/g, "\\'");
-                
-                tbody.innerHTML += `
+                const safeName = empNameStr.replace(/'/g, "\\'");
+
+                html += `
                     <tr class="hover:bg-blue-50 border-b transition-colors">
                         <td class="p-3"><img src="${avatar}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-200"></td>
-                        <td class="p-3 font-bold text-gray-800">${emp.name}</td>
+                        <td class="p-3 font-bold text-gray-800">${empNameStr}</td>
                         <td class="p-3"><span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">${emp.role}</span></td>
                         <td class="p-3 text-gray-600">${emp.hometown || '...'}</td>
                         <td class="p-3 text-center">
@@ -1586,12 +2138,13 @@
                         </td>
                     </tr>`;
             });
+            tbody.innerHTML = html;
             renderTeamList();
         }
 
         async function addEmployee() {
             try {
-                const name = document.getElementById('empName').value;
+                const name = document.getElementById('empName').value.trim();
                 const role = document.getElementById('empRole').value;
                 const dob = document.getElementById('empDob').value || null;
                 const hometown = document.getElementById('empHometown').value;
@@ -1635,8 +2188,13 @@
 
                 const empData = { name, role, dob, hometown, join_date: joinDate, avatar_url: finalAvatarUrl, team_lead_id, team_name };
                 
-                const { error } = await supabaseClient.from('employees').insert([empData]);
-                if (error) throw error;
+                try {
+                    const res = await fetch(`${API_URL}/employees`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(empData) });
+                    if(!res.ok) throw new Error();
+                } catch(e) {
+                    const { error } = await supabaseClient.from('employees').insert([empData]);
+                    if (error) throw error;
+                }
                 
                 Swal.fire('Thành công', 'Đã thêm nhân viên', 'success');
             } catch(error) {
@@ -1648,9 +2206,7 @@
                 if (el) el.value = '';
             });
             updateTeamFields();
-            loadEmployeesTable();
-            loadEmployeesForSelect();
-            renderOrgChart();
+            refreshAllViews();
         }
 
         async function addTeam() {
@@ -1663,15 +2219,17 @@
             let teamData = { name: teamName, role: 'Tổ', team_name: teamName, hometown: '', skills: '', avatar_url: '' };
             try {
                 Swal.fire({ title: 'Đang tạo tổ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                const { error } = await supabaseClient.from('employees').insert([teamData]);
-                if(error) throw error;
+                try {
+                    const res = await fetch(`${API_URL}/employees`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(teamData) });
+                    if(!res.ok) throw new Error();
+                } catch(e) {
+                    const { error } = await supabaseClient.from('employees').insert([teamData]);
+                    if(error) throw error;
+                }
                 
                 Swal.fire('Thành công', `Đã tạo tổ "${teamName}"`, 'success');
                 document.getElementById('newTeamName').value = '';
-                loadEmployeesTable();
-                loadEmployeesForSelect();
-                renderOrgChart();
-                renderTeamList();
+                refreshAllViews();
             } catch (error) {
                 Swal.fire('Lỗi', error.message, 'error');
             }
@@ -1689,13 +2247,22 @@
             try {
                 const teamMembers = allEmployees.filter(e => e.team_name === teamName && e.role !== 'Tổ');
                 for (const member of teamMembers) {
-                    await supabaseClient.from('employees').update({ team_lead_id: null, team_name: null }).eq('id', member.id);
+                    try {
+                        await fetch(`${API_URL}/employees/${member.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_lead_id: null, team_name: null }) });
+                    } catch(e) {
+                        await supabaseClient.from('employees').update({ team_lead_id: null, team_name: null }).eq('id', member.id);
+                    }
                 }
-                const { error } = await supabaseClient.from('employees').delete().eq('id', teamId);
-                if (error) throw error;
+                try {
+                    const res = await fetch(`${API_URL}/employees/${teamId}`, { method: 'DELETE' });
+                    if(!res.ok) throw new Error();
+                } catch(e) {
+                    const { error } = await supabaseClient.from('employees').delete().eq('id', teamId);
+                    if (error) throw error;
+                }
                 
                 Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
-                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
+                refreshAllViews();
             } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
         }
 
@@ -1710,10 +2277,14 @@
                 Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
                 const membersToUpdate = allEmployees.filter(e => e.team_name === teamName);
                 for (const member of membersToUpdate) {
-                    await supabaseClient.from('employees').update({ team_lead_id: null, team_name: null }).eq('id', member.id);
+                    try {
+                        await fetch(`${API_URL}/employees/${member.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_lead_id: null, team_name: null }) });
+                    } catch(e) {
+                        await supabaseClient.from('employees').update({ team_lead_id: null, team_name: null }).eq('id', member.id);
+                    }
                 }
                 Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
-                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart(); renderTeamList();
+                refreshAllViews();
             } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
         }
 
@@ -1721,20 +2292,26 @@
             const emp = allEmployees.find(e => String(e.id) === String(empId));
             if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
 
+            const empNameStr = emp.name || 'Unknown';
             const result = await Swal.fire({
-                title: `Xác nhận xóa nhân viên`, text: `Bạn có chắc chắn muốn xóa ${emp.name}?`,
+                title: `Xác nhận xóa nhân viên`, text: `Bạn có chắc chắn muốn xóa ${empNameStr}?`,
                 icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', reverseButtons: true
             });
             if (!result.isConfirmed) return;
 
             try {
                 Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                await supabaseClient.from('productivity_logs').delete().eq('employee_id', empId);
-                const { error } = await supabaseClient.from('employees').delete().eq('id', empId);
-                if(error) throw error;
+                try {
+                    const res = await fetch(`${API_URL}/employees/${empId}`, { method: 'DELETE' });
+                    if(!res.ok) throw new Error();
+                } catch(e) {
+                    await supabaseClient.from('productivity_logs').delete().eq('employee_id', empId);
+                    const { error } = await supabaseClient.from('employees').delete().eq('id', empId);
+                    if(error) throw error;
+                }
                 
-                Swal.fire('Đã xóa', `${emp.name} đã được xóa.`, 'success');
-                loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
+                Swal.fire('Đã xóa', `${empNameStr} đã được xóa.`, 'success');
+                refreshAllViews();
             } catch (error) {
                 Swal.fire('Lỗi', error.message, 'error');
             }
@@ -1744,12 +2321,13 @@
             const emp = allEmployees.find(e => String(e.id) === String(empId));
             if (!emp) return Swal.fire('Lỗi', 'Không tìm thấy nhân viên', 'error');
 
+            const empNameStr = emp.name || '';
             const { value: formValues } = await Swal.fire({
                 title: 'Chỉnh sửa hồ sơ',
                 html: `
                     <div class="text-left">
                         <label class="block text-sm font-bold mb-1">Họ và Tên:</label>
-                        <input type="text" id="editName" class="w-full border p-2 rounded mb-3" value="${emp.name}">
+                        <input type="text" id="editName" class="w-full border p-2 rounded mb-3" value="${empNameStr}">
                         
                         <label class="block text-sm font-bold mb-1">Vị trí:</label>
                         <select id="editRole" class="w-full border p-2 rounded mb-3">
@@ -1814,13 +2392,55 @@
                     };
                     if(avatarUrl) updates.avatar_url = avatarUrl;
 
-                    const { error } = await supabaseClient.from('employees').update(updates).eq('id', empId);
-                    if(error) throw error;
+                    try {
+                        const res = await fetch(`${API_URL}/employees/${empId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+                        if(!res.ok) throw new Error();
+                    } catch(e) {
+                        const { error } = await supabaseClient.from('employees').update(updates).eq('id', empId);
+                        if(error) throw error;
+                    }
                     
                     Swal.fire('Thành công', 'Hồ sơ nhân viên đã được cập nhật', 'success');
-                    loadEmployeesTable(); loadEmployeesForSelect(); renderOrgChart();
+                    refreshAllViews();
                 } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
             }
+        }
+
+        function showEmployeeDetails(empDataStr) {
+            const emp = JSON.parse(empDataStr);
+            const empNameStr = emp.name || 'Unknown';
+            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
+            const avatar = emp.avatar_url || defaultAvatar;
+            Swal.fire({
+                title: 'Hồ Sơ Nhân Sự',
+                html: `<div class="text-left mt-4"><div class="text-center mb-4"><img src="${avatar}" class="w-24 h-24 rounded-full mx-auto object-cover shadow border"></div><p class="mb-2 border-b pb-1"><strong>👤 Tên:</strong> ${empNameStr}</p><p class="mb-2 border-b pb-1"><strong>🏷️ Vị trí:</strong> <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">${emp.role}</span></p><p class="mb-2 border-b pb-1"><strong>🎂 Ngày sinh:</strong> ${emp.dob || 'Chưa cập nhật'}</p><p class="mb-2 border-b pb-1"><strong>📍 Quê quán:</strong> ${emp.hometown || 'Chưa cập nhật'}</p><p class="mb-2"><strong>🛠️ Kỹ năng:</strong> ${emp.skills || 'Chưa cập nhật'}</p></div>`,
+                confirmButtonText: 'Đóng', confirmButtonColor: '#3b82f6'
+            });
+        }
+
+        function renderTeamList() {
+            const container = document.getElementById('teamList');
+            if(!container) return;
+            const teams = allEmployees.filter(e => e.role === 'Tổ');
+            if(teams.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 text-sm italic py-4">Chưa có tổ nào</div>';
+                return;
+            }
+            let html = '';
+            teams.forEach(team => {
+                const teamName = team.team_name || team.name || 'Không tên';
+                const memberCount = allEmployees.filter(e => e.team_name === teamName && e.role !== 'Tổ').length;
+                const safeTeamName = teamName.replace(/'/g, "\\'");
+                html += `
+                    <div class="flex justify-between items-center bg-white border border-green-200 rounded-lg px-4 py-3 shadow-sm">
+                        <div>
+                            <div class="font-bold text-gray-800">${teamName}</div>
+                            <div class="text-xs text-gray-500">${memberCount} thành viên</div>
+                        </div>
+                        <button onclick="deleteTeam('${team.id}')" class="bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors">🗑️ Xóa</button>
+                    </div>`;
+            });
+            container.innerHTML = html;
         }
 
         // Khởi chạy App
