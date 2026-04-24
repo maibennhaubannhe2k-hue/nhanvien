@@ -645,8 +645,8 @@
                     : '';
                 return `<div class="relative rounded-xl border bg-white p-3 shadow-sm hover:shadow-md transition-all flex flex-col gap-1.5">
                     ${deleteBtn}
-                    <div class="font-bold text-gray-800 text-sm leading-snug pr-5">${ev.title}</div>
-                    ${ev.description ? `<div class="text-xs text-gray-500 leading-relaxed">${ev.description}</div>` : ''}
+                    <div class="font-bold text-gray-800 text-sm leading-snug pr-5" style="white-space:pre-wrap">${ev.title.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                    ${ev.description ? `<div class="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-2.5 py-2 border border-gray-100" style="white-space:pre-wrap">${ev.description.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                     <div class="text-xs text-gray-400 pt-1.5 border-t border-gray-100">${timeBlock}</div>
                 </div>`;
             };
@@ -684,7 +684,7 @@
                 html: `
                     <div style="text-align:left;padding:0 8px">
                         <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">Tên chương trình <span style="color:red">*</span></label>
-                        <input id="evTitle" class="swal2-input" style="margin:0 0 12px 0;width:100%" placeholder="VD: Combo 20 chân tặng 4 hũ đùi gà">
+                        <textarea id="evTitle" class="swal2-textarea" style="margin:0 0 12px 0;width:100%;min-height:70px" placeholder="VD: Combo 20 chân tặng 4 hũ đùi gà"></textarea>
 
                         <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">Mô tả chi tiết</label>
                         <textarea id="evDesc" class="swal2-textarea" style="margin:0 0 12px 0;width:100%;min-height:70px" placeholder="Điều kiện áp dụng, sản phẩm, ưu đãi..."></textarea>
