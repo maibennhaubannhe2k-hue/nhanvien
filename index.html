@@ -399,7 +399,7 @@
     </div>
 
     <script>
-        const API_   = 'https://backend-kho.onrender.com/api';
+        const API_URL = 'https://backend-kho.onrender.com/api';
 
         const SUPABASE_URL = 'https://ssvniazffehszaazxcdz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_lzKyn9vzBAGSzWLbXVwnnQ_gzfA7DOb';
@@ -447,9 +447,12 @@
                     if(state.currentEmpId) {
                         setTimeout(() => {
                             const sel = document.getElementById('empSelect');
-                            if(sel) { 
-                                sel.value = state.currentEmpId; 
-                                handleEmployeeChange(); 
+                            if(sel) {
+                                sel.value = state.currentEmpId;
+                                const emp = allEmployees.find(e => String(e.id) === String(state.currentEmpId));
+                                const search = document.getElementById('empSearch');
+                                if (search && emp) search.value = emp.name || '';
+                                handleEmployeeChange();
                             }
                         }, 800);
                     }
@@ -1309,6 +1312,7 @@
             }
 
             const end_time = sessionEndTime.toLocaleTimeString('vi-VN', {hour12: false});
+            if (!start_time_string) start_time_string = end_time;
             const coeff = session.coefficient || 1;
             const total_value = total_orders * coeff;
             
