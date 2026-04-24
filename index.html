@@ -84,7 +84,11 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1">
                         <label class="block text-sm font-bold mb-1 text-gray-700">Chọn nhân viên đang thao tác:</label>
-                        <select id="empSelect" onchange="handleEmployeeChange()" class="w-full border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-4"></select>
+                        <div class="relative mb-4">
+                            <input type="text" id="empSearch" oninput="filterEmpSelect(this.value)" onfocus="filterEmpSelect(this.value)" placeholder="🔍 Gõ tên nhân viên..." autocomplete="off" class="w-full border-2 border-blue-300 p-2.5 rounded-lg font-bold text-blue-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            <div id="empSuggestions" class="hidden absolute z-50 w-full bg-white border-2 border-t-0 border-blue-300 rounded-b-lg shadow-lg max-h-52 overflow-y-auto"></div>
+                        </div>
+                        <select id="empSelect" class="hidden" onchange="handleEmployeeChange()"></select>
                         
                         <label class="block text-sm font-bold mb-1 text-gray-700">Chọn / Thêm Ca Làm & Hệ Số Độ Khó:</label>
                         <div class="flex gap-2 w-full">
@@ -112,19 +116,33 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm h-full flex flex-col">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 border-b border-gray-200 pb-2">
                         <div class="font-bold text-gray-800 text-lg">Danh sách nhân viên</div>
                         <div class="text-xs font-semibold text-gray-500 bg-white px-2 py-1 rounded shadow-sm">Chấm xanh: Đang làm</div>
                     </div>
-                    <div id="employeeList" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-2 max-h-[400px]"></div>
+                    <div id="employeeList" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-2 max-h-[300px]"></div>
                 </div>
 
-                <div class="relative h-full flex flex-col">
+                <div class="relative flex flex-col">
                     <label class="block text-sm font-bold mb-2 text-gray-800">Dán mã vận đơn (Cá nhân)</label>
                     <textarea id="orderCodes" class="w-full flex-1 min-h-[300px] border-2 border-gray-300 p-4 rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-colors resize-none font-mono tracking-wide" placeholder="Bấm BẮT ĐẦU để kích hoạt ô dán mã..." disabled></textarea>
                     <div id="liveCounter" class="absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-5 py-2 rounded-full font-black text-xl shadow-lg tracking-wide border border-gray-600">0 đơn</div>
+                </div>
+            </div>
+
+            <!-- BẢNG EVENT - FULL WIDTH -->
+            <div class="bg-white rounded-xl border-2 border-purple-200 shadow-sm">
+                <div class="flex items-center justify-between px-5 py-3 bg-purple-50 rounded-t-xl border-b border-purple-100">
+                    <div class="font-bold text-purple-800">📢 Chương Trình Sale</div>
+                    <div class="flex items-center gap-2">
+                        <button id="btnAddEvent" onclick="openAddEvent()" class="hidden text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-purple-700 transition-colors">+ Thêm chương trình</button>
+                        <button id="btnSaleLock" onclick="toggleSaleAuth()" class="text-xs px-3 py-1.5 rounded-lg font-bold border transition-colors bg-white border-purple-300 text-purple-600 hover:bg-purple-100">🔒 Đăng nhập Sale</button>
+                    </div>
+                </div>
+                <div id="eventBoard" class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[80px]">
+                    <div class="col-span-full text-center text-gray-400 text-sm py-3">Đang tải...</div>
                 </div>
             </div>
         </div>
@@ -381,7 +399,7 @@
     </div>
 
     <script>
-        const API_URL = 'https://backend-kho.onrender.com/api';
+        const API_   = 'https://backend-kho.onrender.com/api';
 
         const SUPABASE_URL = 'https://ssvniazffehszaazxcdz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_lzKyn9vzBAGSzWLbXVwnnQ_gzfA7DOb';
@@ -449,10 +467,12 @@
         // ==========================================
         // 0. QUẢN LÝ QUYỀN LỰC
         // ==========================================
-        const MANAGER_PIN  = '8888';           
-        const ADMIN_PIN    = 'luongdkz2000';   
+        const MANAGER_PIN  = '8888';
+        const ADMIN_PIN    = 'luongdkz2000';
+        const SALE_PIN     = 'ACBT222';
 
-        let isManagerAuthenticated = false;    
+        let isManagerAuthenticated = false;
+        let isSaleAuthenticated    = false;    
         let isAdminAuthenticated   = false;    
 
         function checkAdminUI() {
@@ -465,8 +485,267 @@
                 if(badge)  badge.classList.add('hidden');
                 if(navBtn) { navBtn.textContent = '🔒 Admin'; navBtn.className = 'bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition whitespace-nowrap border border-gray-500'; }
             }
+            updateSaleUI();
             handleEmployeeChange();
             renderActiveGroups();
+        }
+
+        // ==========================================
+        // TÌM KIẾM NHÂN VIÊN
+        // ==========================================
+        function filterEmpSelect(q) {
+            const suggestions = document.getElementById('empSuggestions');
+            if (!suggestions) return;
+            q = (q || '').toLowerCase().trim();
+
+            const list = allEmployees.filter(emp =>
+                emp.role !== 'Tổ' && (!q || (emp.name || '').toLowerCase().includes(q))
+            );
+
+            if (list.length === 0) {
+                suggestions.innerHTML = '<div class="p-3 text-gray-400 text-sm text-center">Không tìm thấy</div>';
+            } else {
+                suggestions.innerHTML = list.map(emp => {
+                    const isWorking = Boolean(activeSessions[emp.id]);
+                    const isPaused = isWorking && activeSessions[emp.id] && activeSessions[emp.id].isPaused;
+                    const isRem = isWorking && activeSessions[emp.id] && activeSessions[emp.id].isRemote;
+                    let dotColor = 'bg-gray-300', statusText = 'Trống';
+                    if (isWorking && !isPaused) { dotColor = 'bg-green-500'; statusText = 'Đang làm' + (isRem ? ' (Máy khác)' : ''); }
+                    if (isPaused) { dotColor = 'bg-yellow-400'; statusText = 'Tạm dừng'; }
+                    const safeName = (emp.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                    return `<div onclick="pickEmployee('${emp.id}', '${safeName}')"
+                                class="flex items-center justify-between px-3 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full ${dotColor} flex-shrink-0"></span>
+                            <div>
+                                <div class="font-bold text-gray-800 text-sm">${emp.name || 'Unknown'}</div>
+                                <div class="text-xs text-gray-400">${emp.role || ''}</div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500">${statusText}</div>
+                    </div>`;
+                }).join('');
+            }
+            suggestions.classList.remove('hidden');
+        }
+
+        function pickEmployee(empId, empName) {
+            document.getElementById('empSelect').value = empId;
+            document.getElementById('empSearch').value = empName;
+            document.getElementById('empSuggestions').classList.add('hidden');
+            handleEmployeeChange();
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrap = document.getElementById('empSearch')?.closest('.relative');
+            if (wrap && !wrap.contains(e.target)) {
+                document.getElementById('empSuggestions')?.classList.add('hidden');
+            }
+        });
+
+        // ==========================================
+        // XÁC THỰC SALE
+        // ==========================================
+        async function toggleSaleAuth() {
+            if (isSaleAuthenticated) {
+                isSaleAuthenticated = false;
+                updateSaleUI();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Đã thoát quyền Sale', timer: 1200, showConfirmButton: false });
+                return;
+            }
+            const { value: pin } = await Swal.fire({
+                title: '🔐 Đăng Nhập Chương Trình Sale',
+                input: 'password',
+                inputPlaceholder: 'Nhập mã khóa...',
+                showCancelButton: true, confirmButtonText: 'Xác nhận', cancelButtonText: 'Hủy',
+                inputAttributes: { autocomplete: 'off' }
+            });
+            if (!pin) return;
+            if (pin === SALE_PIN || pin === ADMIN_PIN) {
+                isSaleAuthenticated = true;
+                updateSaleUI();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '✅ Đã mở quyền Sale!', timer: 1500, showConfirmButton: false });
+            } else {
+                Swal.fire('Từ chối', 'Sai mã khóa!', 'error');
+            }
+        }
+
+        function updateSaleUI() {
+            const canSale = isSaleAuthenticated || isAdminAuthenticated;
+            const btnAdd  = document.getElementById('btnAddEvent');
+            const btnLock = document.getElementById('btnSaleLock');
+            if (btnAdd)  btnAdd.classList.toggle('hidden', !canSale);
+            if (btnLock && !isAdminAuthenticated) {
+                btnLock.textContent   = isSaleAuthenticated ? '🔓 Thoát Sale' : '🔒 Đăng nhập Sale';
+                btnLock.className     = isSaleAuthenticated
+                    ? 'text-xs px-3 py-1.5 rounded-lg font-bold border transition-colors bg-green-100 border-green-400 text-green-700 hover:bg-green-200'
+                    : 'text-xs px-3 py-1.5 rounded-lg font-bold border transition-colors bg-white border-purple-300 text-purple-600 hover:bg-purple-100';
+            }
+            if (btnLock && isAdminAuthenticated) btnLock.classList.add('hidden');
+            renderEventBoard();
+        }
+
+        // ==========================================
+        // BẢNG EVENT / CHƯƠNG TRÌNH SALE
+        // ==========================================
+        let allEvents = [];
+
+        async function fetchEvents() {
+            try {
+                const { data, error } = await supabaseClient.from('events').select('*').order('start_date', { ascending: true });
+                if (error) throw error;
+                allEvents = data || [];
+            } catch(e) {
+                allEvents = [];
+            }
+            renderEventBoard();
+        }
+
+        function renderEventBoard() {
+            const board = document.getElementById('eventBoard');
+            if (!board) return;
+
+            // Giờ Việt Nam (UTC+7)
+            const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+            const todayStr = vnNow.toLocaleDateString('en-CA');
+            const nowMins = vnNow.getHours() * 60 + vnNow.getMinutes();
+
+            const toMins = t => { if (!t) return null; const [h,m] = t.slice(0,5).split(':').map(Number); return h*60+m; };
+            const fmtDate = d => d ? d.split('-').reverse().join('/') : '';
+            const fmtTime = t => t ? t.slice(0,5) : '';
+
+            const categorize = ev => {
+                const startDate = ev.start_date || '';
+                const endDate   = ev.end_date   || '';
+                const startMins = toMins(ev.start_time);
+                const endMins   = toMins(ev.end_time);
+                const started = startDate < todayStr || (startDate === todayStr && (startMins === null || nowMins >= startMins));
+                const ended   = endDate   < todayStr || (endDate   === todayStr && endMins !== null && nowMins > endMins);
+                if (ended)    return 'expired';
+                if (started)  return 'active';
+                return 'upcoming';
+            };
+
+            const buildCard = ev => {
+                const startDate = ev.start_date || '';
+                const endDate   = ev.end_date   || '';
+                const sameDay = startDate === endDate;
+                let timeBlock = '';
+                if (sameDay && startDate) {
+                    timeBlock = `<div>📅 ${fmtDate(startDate)}${ev.start_time ? `  ⏰ ${fmtTime(ev.start_time)}${ev.end_time ? ' – ' + fmtTime(ev.end_time) : ''}` : ''}</div>`;
+                } else {
+                    timeBlock = `${startDate ? `<div>🚀 <b>${fmtDate(startDate)}</b>${ev.start_time ? ' lúc ' + fmtTime(ev.start_time) : ''}</div>` : ''}
+                                 ${endDate   ? `<div>🏁 <b>${fmtDate(endDate)}</b>${ev.end_time   ? ' lúc ' + fmtTime(ev.end_time)   : ''}</div>` : ''}`;
+                }
+                const deleteBtn = (isAdminAuthenticated || isSaleAuthenticated)
+                    ? `<button onclick="deleteEvent(${ev.id})" title="Xóa" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 font-bold transition-colors rounded-full hover:bg-red-50">✕</button>`
+                    : '';
+                return `<div class="relative rounded-xl border bg-white p-3 shadow-sm hover:shadow-md transition-all flex flex-col gap-1.5">
+                    ${deleteBtn}
+                    <div class="font-bold text-gray-800 text-sm leading-snug pr-5">${ev.title}</div>
+                    ${ev.description ? `<div class="text-xs text-gray-500 leading-relaxed">${ev.description}</div>` : ''}
+                    <div class="text-xs text-gray-400 pt-1.5 border-t border-gray-100">${timeBlock}</div>
+                </div>`;
+            };
+
+            const active   = allEvents.filter(e => categorize(e) === 'active');
+            const upcoming = allEvents.filter(e => categorize(e) === 'upcoming');
+            const expired  = allEvents.filter(e => categorize(e) === 'expired');
+
+            const col = (title, color, icon, items, emptyMsg) => `
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg ${color} font-bold text-sm">
+                        ${icon} ${title} <span class="ml-auto bg-white bg-opacity-60 text-xs px-2 py-0.5 rounded-full">${items.length}</span>
+                    </div>
+                    ${items.length ? items.map(buildCard).join('') : `<div class="text-center text-gray-300 text-xs py-4">${emptyMsg}</div>`}
+                </div>`;
+
+            if (allEvents.length === 0) {
+                board.innerHTML = '<div class="col-span-full text-center text-gray-400 text-sm py-6">Chưa có chương trình nào</div>';
+                return;
+            }
+
+            board.innerHTML =
+                col('Đang diễn ra', 'bg-green-100 text-green-800',  '🟢', active,   'Không có') +
+                col('Sắp diễn ra',  'bg-blue-100 text-blue-800',    '🔜', upcoming, 'Không có') +
+                col('Đã kết thúc',  'bg-gray-100 text-gray-500',    '✓',  expired,  'Không có');
+        }
+
+        async function openAddEvent() {
+            const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+            const today = vnNow.toLocaleDateString('en-CA');
+            const vnTime = vnNow.toTimeString().slice(0, 5);
+            const { value: formValues } = await Swal.fire({
+                title: '📢 Thêm Chương Trình Sale',
+                width: 520,
+                html: `
+                    <div style="text-align:left;padding:0 8px">
+                        <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">Tên chương trình <span style="color:red">*</span></label>
+                        <input id="evTitle" class="swal2-input" style="margin:0 0 12px 0;width:100%" placeholder="VD: Combo 20 chân tặng 4 hũ đùi gà">
+
+                        <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">Mô tả chi tiết</label>
+                        <textarea id="evDesc" class="swal2-textarea" style="margin:0 0 12px 0;width:100%;min-height:70px" placeholder="Điều kiện áp dụng, sản phẩm, ưu đãi..."></textarea>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+                            <div>
+                                <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">📅 Ngày bắt đầu</label>
+                                <input id="evStartDate" type="date" class="swal2-input" style="margin:0;width:100%" value="${today}">
+                            </div>
+                            <div>
+                                <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">⏰ Giờ bắt đầu</label>
+                                <input id="evStartTime" type="text" class="swal2-input" style="margin:0;width:100%" value="${vnTime}" placeholder="VD: 08:00" maxlength="5">
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+                            <div>
+                                <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">📅 Ngày kết thúc</label>
+                                <input id="evEndDate" type="date" class="swal2-input" style="margin:0;width:100%" value="${today}">
+                            </div>
+                            <div>
+                                <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px">⏰ Giờ kết thúc</label>
+                                <input id="evEndTime" type="text" class="swal2-input" style="margin:0;width:100%" value="${vnTime}" placeholder="VD: 20:00" maxlength="5">
+                            </div>
+                        </div>
+                    </div>`,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Lưu chương trình',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#7c3aed',
+                preConfirm: () => {
+                    const title = document.getElementById('evTitle').value.trim();
+                    if (!title) { Swal.showValidationMessage('Vui lòng nhập tên chương trình!'); return false; }
+                    const timeReg = /^([01]\d|2[0-3]):([0-5]\d)$/;
+                    const st = document.getElementById('evStartTime').value.trim();
+                    const et = document.getElementById('evEndTime').value.trim();
+                    if (st && !timeReg.test(st)) { Swal.showValidationMessage('Giờ bắt đầu không hợp lệ! Nhập theo định dạng HH:MM (VD: 08:00 hoặc 20:30)'); return false; }
+                    if (et && !timeReg.test(et)) { Swal.showValidationMessage('Giờ kết thúc không hợp lệ! Nhập theo định dạng HH:MM (VD: 08:00 hoặc 20:30)'); return false; }
+                    return {
+                        title,
+                        description: document.getElementById('evDesc').value.trim(),
+                        start_date: document.getElementById('evStartDate').value,
+                        start_time: st || null,
+                        end_date: document.getElementById('evEndDate').value,
+                        end_time: et || null
+                    };
+                }
+            });
+            if (!formValues) return;
+            try {
+                const { error } = await supabaseClient.from('events').insert(formValues);
+                if (error) throw error;
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã thêm chương trình!', timer: 1500, showConfirmButton: false });
+                fetchEvents();
+            } catch(e) {
+                Swal.fire('Lỗi', `Không thể lưu: ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteEvent(id) {
+            const r = await Swal.fire({ title: 'Xóa chương trình này?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', confirmButtonColor: '#dc2626' });
+            if (!r.isConfirmed) return;
+            const { error } = await supabaseClient.from('events').delete().eq('id', id);
+            if (!error) fetchEvents();
         }
 
         function toggleAdminLogin() {
@@ -716,9 +995,12 @@
             });
             if (shiftName && shiftName.trim() !== '') {
                 const name = shiftName.trim();
-                
-                if (type === 'individual' && !allIndShifts.includes(name)) allIndShifts.push(name);
-                if (type === 'group' && !allGrpShifts.includes(name)) allGrpShifts.push(name);
+                const existingList = type === 'individual' ? allIndShifts : allGrpShifts;
+                if (existingList.includes(name)) {
+                    return Swal.fire('Trùng tên', `Ca "${name}" đã tồn tại! Vui lòng đặt tên khác.`, 'warning');
+                }
+                if (type === 'individual') allIndShifts.push(name);
+                if (type === 'group') allGrpShifts.push(name);
                 saveLocalShifts();
                 renderShiftSelects();
 
@@ -1596,7 +1878,7 @@
         // MODULE: DASHBOARD 
         // ==========================================
         const endD = new Date();
-        const startD = new Date(); startD.setDate(startD.getDate() - 30); 
+        const startD = new Date();
         document.getElementById('filterStartDate_Ind').value = getLocalDateString(startD);
         document.getElementById('filterEndDate_Ind').value = getLocalDateString(endD);
         document.getElementById('filterStartDate_Grp').value = getLocalDateString(startD);
@@ -2183,6 +2465,8 @@
         function selectEmployee(empId) {
             currentEmpId = empId;
             document.getElementById('empSelect').value = empId;
+            const emp = allEmployees.find(e => String(e.id) === String(empId));
+            if (emp) document.getElementById('empSearch').value = emp.name || '';
             handleEmployeeChange();
             renderEmployeeListInInput();
         }
@@ -2316,6 +2600,9 @@
                 }
 
                 if(!name) return Swal.fire('Cảnh báo', 'Vui lòng nhập tên!', 'warning');
+
+                const duplicate = allEmployees.find(e => e.name && e.name.trim().toLowerCase() === name.trim().toLowerCase());
+                if (duplicate) return Swal.fire('Trùng tên', `Nhân viên "${duplicate.name}" đã tồn tại trong hệ thống!`, 'warning');
 
                 Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
@@ -2594,6 +2881,7 @@
             await loadEmployeesForSelect();
             updateTeamFields();
             fetchDailyTop();
+            fetchEvents();
         })();
         
         setInterval(fetchDailyTop, 15000);
