@@ -463,8 +463,7 @@
 
         function getLocalDateString(dateStrOrObj) {
             const date = dateStrOrObj ? new Date(dateStrOrObj) : new Date();
-            const offset = date.getTimezoneOffset() * 60000;
-            return (new Date(date.getTime() - offset)).toISOString().split('T')[0];
+            return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
         }
 
         // ==========================================
@@ -1882,7 +1881,7 @@
         // MODULE: DASHBOARD 
         // ==========================================
         const endD = new Date();
-        const startD = new Date();
+        const startD = new Date(); startD.setDate(startD.getDate() - 34);
         document.getElementById('filterStartDate_Ind').value = getLocalDateString(startD);
         document.getElementById('filterEndDate_Ind').value = getLocalDateString(endD);
         document.getElementById('filterStartDate_Grp').value = getLocalDateString(startD);

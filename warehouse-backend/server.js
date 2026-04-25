@@ -119,8 +119,8 @@ const applyDateFilter = (query, startDate, endDate) => {
 };
 
 app.get('/api/stats/employees', async (req, res) => {
-    const { startDate, endDate, isGroup } = req.query; 
-    let query = supabase.from('productivity_logs').select(`total_orders, session_name, employees(name)`);
+    const { startDate, endDate, isGroup } = req.query;
+    let query = supabase.from('productivity_logs').select(`total_orders, session_name, employees(name)`).limit(50000);
     query = applyDateFilter(query, startDate, endDate);
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
@@ -140,7 +140,7 @@ app.get('/api/stats/employees', async (req, res) => {
 
 app.get('/api/stats/daily', async (req, res) => {
     const { startDate, endDate, isGroup } = req.query;
-    let query = supabase.from('productivity_logs').select('work_date, total_orders, session_name');
+    let query = supabase.from('productivity_logs').select('work_date, total_orders, session_name').limit(50000);
     query = applyDateFilter(query, startDate, endDate);
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
@@ -205,7 +205,7 @@ app.get('/api/stats/top3', async (req, res) => {
 // ==========================================
 app.get('/api/stats/performance', async (req, res) => {
     const { startDate, endDate } = req.query;
-    let query = supabase.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)');
+    let query = supabase.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)').limit(50000);
     query = applyDateFilter(query, startDate, endDate);
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
