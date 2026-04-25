@@ -214,16 +214,17 @@ app.get('/api/stats/performance', async (req, res) => {
 
     data.forEach(log => {
         if(!log.employees) return;
+        if((log.total_time_seconds || 0) < 180) return;
         const empName = log.employees.name;
         const isGroup = log.session_name && log.session_name.startsWith('[NHÓM]');
         let target = isGroup ? grpStats : indStats;
-        
+
         if (!target[empName]) target[empName] = { value: 0, time: 0 };
-        
+
         let val = log.total_value != null ? log.total_value : (log.total_orders * (log.coefficient || 1));
-        
+
         target[empName].value += val;
-        target[empName].time += (log.total_time_seconds || 1); 
+        target[empName].time += (log.total_time_seconds || 1);
     });
 
     const calcPerf = (obj) => Object.entries(obj).map(e => {
