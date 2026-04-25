@@ -227,7 +227,7 @@ app.get('/api/stats/performance', async (req, res) => {
     });
 
     const calcPerf = (obj) => Object.entries(obj).map(e => {
-        let perf = (e[1].value / e[1].time).toFixed(4); 
+        let perf = ((e[1].value / e[1].time) * 3600).toFixed(1);
         return { name: e[0], performance: parseFloat(perf), totalValue: e[1].value };
     }).sort((a,b) => b.performance - a.performance);
 
