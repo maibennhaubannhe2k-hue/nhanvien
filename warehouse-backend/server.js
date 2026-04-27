@@ -64,6 +64,8 @@ app.get('/api/shifts', async (req, res) => {
 app.post('/api/shifts', async (req, res) => {
     const { shiftName, type = 'individual' } = req.body;
     if (shiftName) {
+        const { data: existing } = await supabase.from('shifts').select('id').eq('name', shiftName).eq('type', type).limit(1);
+        if (existing && existing.length > 0) return res.status(409).json({ error: `Ca "${shiftName}" đã tồn tại!` });
         await supabase.from('shifts').insert([{ name: shiftName, type }]);
     }
     const { data, error } = await supabase.from('shifts').select('name').eq('type', type).order('id', { ascending: true });
