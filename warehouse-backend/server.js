@@ -216,7 +216,7 @@ app.get('/api/stats/performance', async (req, res) => {
 
     data.forEach(log => {
         if(!log.employees) return;
-        if((log.total_time_seconds || 0) < 180) return;
+        if((log.total_time_seconds || 0) < 30) return;
         const empName = log.employees.name;
         const isGroup = log.session_name && log.session_name.startsWith('[NHÓM]');
         let target = isGroup ? grpStats : indStats;

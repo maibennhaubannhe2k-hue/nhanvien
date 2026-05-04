@@ -1774,14 +1774,14 @@
             if (totalSeconds === 0) totalSeconds = 1;
 
             const numPeople = grp.members.length;
-            const countPerPerson = Math.floor(total_orders / numPeople);
+            const personOrders = parseFloat((total_orders / numPeople).toFixed(2));
             const avgTimePerOrder = 0;
 
             const coeff = grp.coefficient || 1;
-            const total_value_per_person = countPerPerson * coeff;
-            
+            const personValue = parseFloat((personOrders * coeff).toFixed(2));
+
             const work_date = getLocalDateString(sessionEndTime);
-            
+
             let start_time_string = null;
             if (grp.originalStartTime) {
                 const stD = new Date(grp.originalStartTime);
@@ -1796,7 +1796,7 @@
 
             Swal.fire({
                 title: `Kết thúc Nhóm: ${sessionName}?`,
-                html: `Tổng <b class="text-indigo-600 text-xl">${total_orders} đơn</b> chia đều cho <b class="text-indigo-600 text-xl">${numPeople} người</b>.<br><br>Mỗi người cộng <b class="text-green-600 text-xl">~${countPerPerson} đơn</b> (Hệ số: x${coeff})<br>👉 Tổng KPI: <b class="text-red-500 text-xl">${total_value_per_person} Giá trị</b>/người.`,
+                html: `Tổng <b class="text-indigo-600 text-xl">${total_orders} đơn</b> chia đều cho <b class="text-indigo-600 text-xl">${numPeople} người</b>.<br><br>Mỗi người cộng <b class="text-green-600 text-xl">${personOrders} đơn</b> (Hệ số: x${coeff})<br>👉 Tổng KPI: <b class="text-red-500 text-xl">${personValue} Giá trị</b>/người.`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Lưu & Giải tán Nhóm',
@@ -1811,19 +1811,16 @@
                     Swal.fire({ title: 'Đang chia đơn...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
                     const effectiveStartTime = start_time_string || end_time;
-                    const logsArray = grp.members.map((empId, idx) => {
-                        const isLast = idx === grp.members.length - 1;
-                        const personOrders = isLast ? total_orders - countPerPerson * (numPeople - 1) : countPerPerson;
-                        const personValue = personOrders * coeff;
+                    const logsArray = grp.members.map((empId) => {
                         return {
                             employee_id: empId, work_date, start_time: effectiveStartTime, end_time,
-                            total_orders: Number(personOrders), total_time_seconds: Number(totalSeconds),
-                            average_time_per_order: 0, total_value: Number(personValue), coefficient: Number(coeff),
+                            total_orders: personOrders, total_time_seconds: Number(totalSeconds),
+                            average_time_per_order: 0, total_value: personValue, coefficient: Number(coeff),
                             session_name: `[NHÓM] ${sessionName}`, order_codes: order_codes_str
                         };
                     });
 
-                    const successHtmlGroup = `<div class="text-left"><p class="mb-2"><strong>👥 Nhóm:</strong> ${sessionName}</p><p class="mb-2"><strong>📦 Tổng nhóm đóng:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>📈 Đã chia:</strong> ~${countPerPerson} đơn / người</p><p class="mb-2"><strong>🏆 KPI Giá trị:</strong> ${total_value_per_person} điểm/người</p></div>`;
+                    const successHtmlGroup = `<div class="text-left"><p class="mb-2"><strong>👥 Nhóm:</strong> ${sessionName}</p><p class="mb-2"><strong>📦 Tổng nhóm đóng:</strong> ${total_orders} đơn</p><p class="mb-2"><strong>📈 Đã chia:</strong> ${personOrders} đơn / người</p><p class="mb-2"><strong>🏆 KPI Giá trị:</strong> ${personValue} điểm/người</p></div>`;
 
                     const finishGroup = () => {
                         fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: 'GROUP_' + groupId, action: 'end' }) }).catch(()=>{});
@@ -1917,15 +1914,17 @@
         document.getElementById('filterEndDate_Ind').value = getLocalDateString(endD);
         document.getElementById('filterStartDate_Grp').value = getLocalDateString(startD);
         document.getElementById('filterEndDate_Grp').value = getLocalDateString(endD);
-        document.getElementById('filterStartDate_Perf').value = getLocalDateString(startD);
+        document.getElementById('filterStartDate_Perf').value = getLocalDateString(endD);
         document.getElementById('filterEndDate_Perf').value = getLocalDateString(endD);
         
-        let empChartInstance = null; let empChartInstanceGrp = null; 
+        let empChartInstance = null; let empChartInstanceGrp = null;
         let dailyChartInstance = null; let dailyChartInstanceGrp = null;
+        const dashboardLoadVersion = { individual: 0, group: 0 };
 
         async function loadDashboards(type = 'individual') {
             const isGroup = type === 'group';
             const suffix = isGroup ? '_Grp' : '_Ind';
+            const myVersion = ++dashboardLoadVersion[type];
 
             const fStart = document.getElementById(`filterStartDate${suffix}`).value;
             const fEnd = document.getElementById(`filterEndDate${suffix}`).value;
@@ -1933,11 +1932,12 @@
             let dataEmp = [], dataDaily = [];
 
             const data = await fetchAllPages(() => {
-                let q = supabaseClient.from('productivity_logs').select('total_orders, session_name, work_date, employees(name)');
+                let q = supabaseClient.from('productivity_logs').select('total_orders, session_name, work_date, employees(name)').order('id', { ascending: true });
                 if (fStart) q = q.gte('work_date', fStart);
                 if (fEnd) q = q.lte('work_date', fEnd);
                 return q;
             });
+            if (dashboardLoadVersion[type] !== myVersion) return;
             if (!data) return;
 
             const filteredData = data.filter(log => {
@@ -1963,12 +1963,12 @@
             // Fill đủ ngày từ fStart đến fEnd, ngày không có data = 0
             dataDaily = [];
             if (fStart && fEnd) {
-                const cur = new Date(fStart);
-                const end = new Date(fEnd);
+                const cur = new Date(fStart + 'T00:00:00+07:00');
+                const end = new Date(fEnd + 'T00:00:00+07:00');
                 while (cur <= end) {
                     const d = cur.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
                     dataDaily.push({ work_date: d, total_daily_orders: dailyStats[d] || 0 });
-                    cur.setDate(cur.getDate() + 1);
+                    cur.setTime(cur.getTime() + 86400000);
                 }
             } else {
                 dataDaily = Object.keys(dailyStats).map(date => ({ work_date: date, total_daily_orders: dailyStats[date] })).sort((a, b) => a.work_date.localeCompare(b.work_date));
@@ -2080,34 +2080,49 @@
         // ==========================================
         // 7. BXH HIỆU SUẤT TỔNG HỢP MỚI
         // ==========================================
+        let perfLoadVersion = 0;
         async function loadPerformanceBoard() {
+            const myVersion = ++perfLoadVersion;
             const fStart = document.getElementById(`filterStartDate_Perf`).value;
             const fEnd = document.getElementById(`filterEndDate_Perf`).value;
 
+            document.getElementById('perfContainer_Ind').innerHTML = '<div class="text-center text-blue-400 italic py-8">Đang tải...</div>';
+            document.getElementById('perfContainer_Grp').innerHTML = '<div class="text-center text-indigo-400 italic py-8">Đang tải...</div>';
+
             const data = await fetchAllPages(() => {
-                let q = supabaseClient.from('productivity_logs').select('total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)');
+                let q = supabaseClient.from('productivity_logs').select('work_date, total_orders, total_value, coefficient, total_time_seconds, session_name, employees(name)').order('id', { ascending: true });
                 if (fStart) q = q.gte('work_date', fStart);
                 if (fEnd) q = q.lte('work_date', fEnd);
                 return q;
             });
+            if (perfLoadVersion !== myVersion) return;
             if (!data) return;
 
             const indStats = {}; const grpStats = {};
             data.forEach(log => {
                 if (!log.employees) return;
-                if ((log.total_time_seconds || 0) < 180) return;
+                // Lọc thêm phía client để đảm bảo đúng ngày (tránh trường hợp Supabase trả về dữ liệu ngoài khoảng)
+                if (fStart && log.work_date < fStart) return;
+                if (fEnd && log.work_date > fEnd) return;
                 const empName = log.employees.name;
                 const isGroup = log.session_name && log.session_name.startsWith('[NHÓM]');
+                // Ca nhóm không lọc theo thời gian (nhiều máy có thể mất startTime khi server restart)
+                // Ca cá nhân lọc < 30s để tránh bấm nhầm
+                if (!isGroup && (log.total_time_seconds || 0) < 30) return;
                 let target = isGroup ? grpStats : indStats;
 
                 if (!target[empName]) target[empName] = { value: 0, time: 0 };
-                let val = log.total_value != null ? log.total_value : (log.total_orders * (log.coefficient || 1));
+                const orders = Number(log.total_orders) || 0;
+                const coeff = Number(log.coefficient) || 1;
+                let val = (log.total_value != null && !isNaN(Number(log.total_value)))
+                    ? Number(log.total_value)
+                    : (orders * coeff);
                 target[empName].value += val;
-                target[empName].time += (log.total_time_seconds || 1);
+                target[empName].time += (Number(log.total_time_seconds) || 1);
             });
 
             const calcPerf = (obj) => Object.entries(obj).map(e => {
-                return { name: e[0], performance: e[1].value, totalValue: e[1].value };
+                return { name: e[0], performance: Math.round(e[1].value * 10) / 10, totalValue: e[1].value };
             }).sort((a, b) => b.performance - a.performance);
 
             renderPerfList(calcPerf(indStats), 'perfContainer_Ind', 'blue');
