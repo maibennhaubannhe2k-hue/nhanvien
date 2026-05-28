@@ -1331,6 +1331,7 @@
                 sessionSelect.disabled = true;
                 shiftCoeff.value = session.coefficient || 1;
                 shiftCoeff.disabled = true;
+                loadScanBatches(session.sessionName);
 
                 if (session.isRemote) {
                     document.getElementById('btnStart').disabled = true;
@@ -3100,15 +3101,33 @@
                 gain.connect(ctx.destination);
                 osc.frequency.value = 1400;
                 osc.type = 'sine';
-                gain.gain.setValueAtTime(0.4, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(1.0, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
                 osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.12);
+                osc.stop(ctx.currentTime + 0.22);
+            } catch {}
+        }
+
+        function playDupBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 380;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(1.0, ctx.currentTime);
+                gain.gain.setValueAtTime(1.0, ctx.currentTime + 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.45);
             } catch {}
         }
 
         let html5QrCode = null;
-        let qrScannedCodes = [];
+        let qrScannedCodes = [];   // mã mới quét trong lần này
+        let qrPrevCodes = [];      // mã đã có từ batch trước (load từ Supabase)
         let qrCurrentSession = '';
         let qrIsScanning = false;
 
@@ -3119,6 +3138,7 @@
             sel.innerHTML = '<option value="">-- Chọn ca làm --</option>';
             allIndShifts.forEach(s => { sel.innerHTML += `<option value="${s}">${s}</option>`; });
             qrScannedCodes = [];
+            qrPrevCodes = [];
             qrCurrentSession = '';
             qrIsScanning = false;
             document.getElementById('qrStep2').classList.add('hidden');
@@ -3156,6 +3176,23 @@
             document.getElementById('qrStopBtn').classList.remove('hidden');
             document.getElementById('qrReaderDiv').innerHTML = '';
 
+            // Pre-load mã đã quét từ các batch trước của ca này
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const { data: prevBatches } = await supabaseClient
+                .from('scan_batches')
+                .select('order_codes')
+                .eq('session_name', sessionName)
+                .gte('created_at', sevenDaysAgo.toISOString());
+            qrPrevCodes = [];
+            if (prevBatches) {
+                prevBatches.forEach(b => {
+                    b.order_codes.split('\n').map(c => c.trim()).filter(c => c).forEach(c => {
+                        if (!qrPrevCodes.includes(c)) qrPrevCodes.push(c);
+                    });
+                });
+            }
+
             if (html5QrCode && qrIsScanning) {
                 try { await html5QrCode.stop(); } catch {}
             }
@@ -3168,16 +3205,29 @@
                     { fps: 15, qrbox: { width: 260, height: 260 } },
                     (decodedText) => {
                         const code = decodedText.trim();
-                        if (!qrScannedCodes.includes(code)) {
+                        const lastEl = document.getElementById('qrLastScanned');
+                        const lastCode = document.getElementById('qrLastCode');
+                        const isDup = qrScannedCodes.includes(code) || qrPrevCodes.includes(code);
+                        if (!isDup) {
                             qrScannedCodes.push(code);
                             document.getElementById('qrCountDisplay').textContent = `${qrScannedCodes.length} đơn`;
-                            const lastEl = document.getElementById('qrLastScanned');
-                            document.getElementById('qrLastCode').textContent = code;
+                            lastEl.className = 'text-center bg-green-50 border border-green-200 rounded-xl p-3';
+                            lastCode.className = 'font-mono font-bold text-green-700 text-sm break-all';
+                            lastCode.textContent = code;
                             lastEl.classList.remove('hidden');
                             lastEl.style.animation = 'none';
                             lastEl.offsetHeight;
                             lastEl.style.animation = 'qrFlash 0.4s ease';
                             playBeep();
+                        } else {
+                            lastEl.className = 'text-center bg-red-50 border border-red-300 rounded-xl p-3';
+                            lastCode.className = 'font-mono font-bold text-red-600 text-sm break-all';
+                            lastCode.textContent = `⚠️ Đã quét rồi: ${code}`;
+                            lastEl.classList.remove('hidden');
+                            lastEl.style.animation = 'none';
+                            lastEl.offsetHeight;
+                            lastEl.style.animation = 'qrFlash 0.4s ease';
+                            playDupBeep();
                         }
                     },
                     () => {}
@@ -3377,6 +3427,9 @@
                 const dt = new Date(b.created_at);
                 const timeStr = dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                 const dateStr = dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                const delBtn = isAdminAuthenticated
+                    ? `<button onclick="deletePendingBatch('${b.id}')" class="ml-1 text-red-400 hover:text-red-600 font-black text-base leading-none flex-shrink-0" title="Xóa">✕</button>`
+                    : '';
                 return `
                     <div class="flex justify-between items-center py-1.5 border-b border-orange-100 last:border-0">
                         <div class="min-w-0 flex-1">
@@ -3384,8 +3437,19 @@
                             <div class="text-gray-400 text-[10px]">${timeStr} · ${dateStr}</div>
                         </div>
                         <span class="font-black text-orange-600 text-sm flex-shrink-0 ml-2">${b.total_orders}</span>
+                        ${delBtn}
                     </div>`;
             }).join('');
+        }
+
+        async function deletePendingBatch(id) {
+            const r = await Swal.fire({ title: 'Xóa batch này?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy', confirmButtonColor: '#dc2626' });
+            if (!r.isConfirmed) return;
+            const { error } = await supabaseClient.from('scan_batches').delete().eq('id', id);
+            if (!error) {
+                fetchPendingBatches();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã xóa batch!', timer: 1200, showConfirmButton: false });
+            }
         }
 
         setInterval(fetchDailyTop, 15000);
