@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -33,6 +34,7 @@
         @keyframes pulse-animation { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
         .group-card { transition: all 0.2s; }
         .group-card.selected { border-color: #4f46e5 !important; background-color: #e0e7ff !important; box-shadow: 0 0 0 2px #c7d2fe; }
+        @keyframes qrFlash { 0% { background-color: #dcfce7; transform: scale(1.03); } 100% { background-color: #f0fdf4; transform: scale(1); } }
     </style>
 </head>
 <body class="bg-gray-100 font-sans relative">
@@ -47,6 +49,15 @@
         <div class="bg-white rounded-xl shadow-lg border border-indigo-200 overflow-hidden">
             <div class="bg-indigo-600 text-white text-center py-2 font-bold text-xs uppercase tracking-wide">🏆 NHÓM HÔM NAY (SL)</div>
             <div id="sideTopGrp" class="p-3 space-y-2 bg-indigo-50/50">
+                <div class="text-center text-gray-400 text-xs py-2 font-medium">Đang tải...</div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg border border-orange-200 overflow-hidden">
+            <div class="bg-orange-500 text-white py-2 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2">
+                📦 CA ĐANG CHỜ QR
+                <span id="pendingBatchBadge" class="hidden bg-white text-orange-600 text-xs px-1.5 py-0.5 rounded-full font-black leading-none"></span>
+            </div>
+            <div id="sidePendingBatches" class="p-3 space-y-1 bg-orange-50/50 max-h-52 overflow-y-auto">
                 <div class="text-center text-gray-400 text-xs py-2 font-medium">Đang tải...</div>
             </div>
         </div>
@@ -66,6 +77,7 @@
             </div>
             
             <div class="flex items-center gap-3 shrink-0">
+                <div id="offlineBadge" class="hidden"></div>
                 <button id="adminNavBtn" onclick="toggleAdminLogin()" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition whitespace-nowrap border border-gray-500">🔒 Admin</button>
                 <div class="flex items-center bg-white rounded-full px-3 py-1.5 shadow-inner min-w-[220px]">
                     <input type="text" id="globalSearchInput" placeholder="🔍 Tìm đơn..." class="outline-none text-sm text-gray-800 w-full bg-transparent font-medium" onkeypress="if(event.key === 'Enter') searchOrderCode()">
@@ -125,10 +137,22 @@
                 </div>
 
                 <div class="relative flex flex-col">
-                    <label class="block text-sm font-bold mb-2 text-gray-800">Dán mã vận đơn (Cá nhân)</label>
-                    <textarea id="orderCodes" class="w-full flex-1 min-h-[300px] border-2 border-gray-300 p-4 rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-colors resize-none font-mono tracking-wide" placeholder="Bấm BẮT ĐẦU để kích hoạt ô dán mã..." disabled></textarea>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-bold text-gray-800">Dán mã vận đơn (Cá nhân)</label>
+                        <button onclick="openQRScanner()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-sm"><span class="text-2xl leading-none">📷</span><span class="text-sm">Quét QR</span></button>
+                    </div>
+                    <textarea id="orderCodes" class="w-full flex-1 min-h-[180px] border-2 border-gray-300 p-4 rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-colors resize-none font-mono tracking-wide" placeholder="Bấm BẮT ĐẦU để kích hoạt ô dán mã..." disabled></textarea>
                     <div id="liveCounter" class="absolute bottom-4 right-4 bg-black bg-opacity-80 text-white px-5 py-2 rounded-full font-black text-xl shadow-lg tracking-wide border border-gray-600">0 đơn</div>
                 </div>
+            </div>
+
+            <!-- BATCH QR -->
+            <div id="scanBatchSection" class="hidden rounded-xl border-2 border-purple-200 bg-purple-50 shadow-sm mb-6">
+                <div class="flex items-center justify-between px-5 py-3 bg-purple-100 rounded-t-xl border-b border-purple-200">
+                    <div class="font-bold text-purple-800 flex items-center gap-2">📦 Batch QR đã quét <span id="scanBatchCount" class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full font-bold"></span></div>
+                    <button onclick="loadScanBatches(document.getElementById('sessionSelect').value)" class="text-xs text-purple-600 hover:text-purple-800 font-bold border border-purple-300 bg-white px-2 py-1 rounded-lg">↻ Làm mới</button>
+                </div>
+                <div id="scanBatchList" class="p-4 space-y-2 max-h-[260px] overflow-y-auto"></div>
             </div>
 
             <!-- BẢNG EVENT - FULL WIDTH -->
@@ -397,12 +421,135 @@
         </div>
     </div>
 
+    <!-- QR SCANNER MODAL -->
+    <div id="qrScannerModal" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-end md:items-center justify-center">
+        <div class="bg-white w-full md:max-w-sm md:rounded-2xl rounded-t-2xl flex flex-col overflow-hidden shadow-2xl" style="max-height:95dvh">
+            <div class="bg-purple-700 text-white px-5 py-4 flex justify-between items-center flex-shrink-0">
+                <div>
+                    <div class="font-black text-lg">📷 Quét Mã QR</div>
+                    <div id="qrModalSubtitle" class="text-purple-200 text-xs mt-0.5">Chọn ca làm để bắt đầu</div>
+                </div>
+                <button onclick="closeQRScanner()" class="text-purple-200 hover:text-white text-4xl font-bold leading-none w-10 h-10 flex items-center justify-center">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                <div id="qrStep1">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Chọn ca làm cần quét:</label>
+                    <select id="qrSessionSelect" class="w-full border-2 border-purple-300 p-3 rounded-xl font-bold text-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-base">
+                        <option value="">-- Chọn ca làm --</option>
+                    </select>
+                </div>
+                <div id="qrStep2" class="hidden">
+                    <div class="relative rounded-xl overflow-hidden bg-black">
+                        <div id="qrReaderDiv" class="w-full"></div>
+                        <div class="absolute top-3 right-3 bg-black/75 text-white px-4 py-2 rounded-full font-black text-2xl shadow-lg" id="qrCountDisplay">0 đơn</div>
+                    </div>
+                    <p class="text-center text-xs text-gray-400 mt-2">Camera tự nhận diện — mã trùng sẽ bị bỏ qua</p>
+                </div>
+                <div id="qrLastScanned" class="hidden text-center bg-green-50 border border-green-200 rounded-xl p-3">
+                    <div class="text-xs text-gray-500 mb-1 font-bold uppercase tracking-wide">Mã vừa quét</div>
+                    <div id="qrLastCode" class="font-mono font-bold text-green-700 text-sm break-all"></div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-200 flex flex-col gap-2 flex-shrink-0 bg-gray-50">
+                <button id="qrStartBtn" onclick="startQRCamera()" class="w-full bg-purple-600 text-white py-4 rounded-xl font-black text-lg hover:bg-purple-700 transition-colors shadow-md">📷 Bắt Đầu Quét</button>
+                <button id="qrStopBtn" onclick="stopQRCamera()" class="hidden w-full bg-yellow-500 text-white py-4 rounded-xl font-black text-lg hover:bg-yellow-600 transition-colors shadow-md">⏸ Dừng Camera</button>
+                <button id="qrSaveBtn" onclick="saveQRBatch()" class="hidden w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg hover:bg-green-700 transition-colors shadow-md">💾 Lưu Batch</button>
+                <button onclick="clearQRCodes()" class="w-full bg-white text-gray-500 py-2 rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors border border-gray-200">🗑 Xóa tất cả mã đã quét</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'https://backend-kho.onrender.com/api';
 
         const SUPABASE_URL = 'https://ssvniazffehszaazxcdz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_lzKyn9vzBAGSzWLbXVwnnQ_gzfA7DOb';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ==========================================
+        // OFFLINE / PENDING QUEUE
+        // ==========================================
+        const PENDING_KEY = 'ACBT_PENDING_QUEUE';
+
+        function getPendingQueue() {
+            try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch { return []; }
+        }
+        function savePendingQueue(q) {
+            localStorage.setItem(PENDING_KEY, JSON.stringify(q));
+        }
+        function addToPendingQueue(item) {
+            const q = getPendingQueue();
+            q.push({ ...item, _id: Date.now() + '_' + Math.random().toString(36).slice(2), _ts: new Date().toISOString() });
+            savePendingQueue(q);
+            updateOfflineUI();
+        }
+
+        function updateOfflineUI() {
+            const badge = document.getElementById('offlineBadge');
+            if (!badge) return;
+            const q = getPendingQueue();
+            const isOnline = navigator.onLine;
+            if (!isOnline) {
+                badge.className = 'flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border bg-red-600 text-white border-red-400';
+                badge.innerHTML = `📡 OFFLINE${q.length > 0 ? ` · ${q.length} chờ` : ''}`;
+                badge.onclick = null;
+            } else if (q.length > 0) {
+                badge.className = 'flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border bg-orange-500 text-white border-orange-400 cursor-pointer';
+                badge.innerHTML = `⏳ ${q.length} ca chờ đồng bộ`;
+                badge.onclick = processPendingQueue;
+            } else {
+                badge.className = 'hidden';
+                badge.innerHTML = '';
+                badge.onclick = null;
+            }
+        }
+
+        async function processPendingQueue() {
+            const q = getPendingQueue();
+            if (q.length === 0) return;
+            if (!navigator.onLine) return;
+
+            const badge = document.getElementById('offlineBadge');
+            if (badge && badge.classList.contains('flex')) {
+                badge.innerHTML = `🔄 Đang đồng bộ ${q.length} ca...`;
+                badge.onclick = null;
+            }
+
+            const failed = [];
+            let syncCount = 0;
+
+            for (const item of q) {
+                try {
+                    const payload = Array.isArray(item.data) ? item.data : [item.data];
+                    let ok = false;
+                    try {
+                        const res = await fetch(`${API_URL}/logs`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(item.data)
+                        });
+                        ok = res.ok;
+                    } catch {}
+                    if (!ok) {
+                        const { error } = await supabaseClient.from('productivity_logs').insert(payload);
+                        if (error) throw error;
+                    }
+                    syncCount++;
+                } catch {
+                    failed.push(item);
+                }
+            }
+
+            savePendingQueue(failed);
+            updateOfflineUI();
+
+            if (syncCount > 0) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `✅ Đã đồng bộ ${syncCount} ca làm lúc offline!`, timer: 3000, showConfirmButton: false });
+                fetchDailyTop();
+            }
+            if (failed.length > 0) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: `⚠️ Còn ${failed.length} ca chưa đồng bộ được`, timer: 3000, showConfirmButton: false });
+            }
+        }
 
         async function fetchAllPages(buildQuery) {
             const PAGE = 1000;
@@ -425,7 +572,8 @@
         let activeGroupSessions = {}; 
         let currentEmpId = null;
         let tempGroupSelection = []; 
-        let currentHistoryLogs = []; 
+        let currentHistoryLogs = [];
+        let _pendingRestoreEmpId = null;
 
         // ==========================================
         // BẢO HIỂM CHỐNG MẤT DỮ LIỆU KHI BẤM F5 (LOCAL STORAGE)
@@ -457,21 +605,24 @@
                         activeGroupSessions[id] = state.grp[id];
                     }
                     if(state.currentEmpId) {
-                        setTimeout(() => {
-                            const sel = document.getElementById('empSelect');
-                            if(sel) {
-                                sel.value = state.currentEmpId;
-                                const emp = allEmployees.find(e => String(e.id) === String(state.currentEmpId));
-                                const search = document.getElementById('empSearch');
-                                if (search && emp) search.value = emp.name || '';
-                                handleEmployeeChange();
-                            }
-                        }, 800);
+                        _pendingRestoreEmpId = state.currentEmpId;
                     }
                 }
             } catch(e) {}
         }
 
+        function restoreCurrentEmployee() {
+            if (!_pendingRestoreEmpId) return;
+            const sel = document.getElementById('empSelect');
+            if (sel) {
+                sel.value = _pendingRestoreEmpId;
+                const emp = allEmployees.find(e => String(e.id) === String(_pendingRestoreEmpId));
+                const search = document.getElementById('empSearch');
+                if (search && emp) search.value = emp.name || '';
+                handleEmployeeChange();
+            }
+            _pendingRestoreEmpId = null;
+        }
 
         function getLocalDateString(dateStrOrObj) {
             const date = dateStrOrObj ? new Date(dateStrOrObj) : new Date();
@@ -1063,7 +1214,7 @@
             try {
                 await supabaseClient.from('shifts').delete().eq('name', shiftName).eq('type', type);
             } catch(e) {
-                fetch(`${API_URL}/shifts/${encodeURIComponent(shiftName)}?type=${type}`, { method: 'DELETE' }).catch(()=>{});
+                fetch(`${API_URL}/shifts?name=${encodeURIComponent(shiftName)}&type=${type}`, { method: 'DELETE' }).catch(()=>{});
             }
 
             Swal.fire({ toast: true, position: 'top-end', title: 'Đã xóa ca thành công!', icon: 'success', timer: 1500, showConfirmButton: false });
@@ -1335,7 +1486,8 @@
             const performance = (total_value / totalSeconds).toFixed(4); 
             
             const hours = Math.floor(totalSeconds / 3600); const minutes = Math.floor((totalSeconds % 3600) / 60); const seconds = totalSeconds % 60;
-            const empName = document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text;
+            const _empForName = allEmployees.find(e => String(e.id) === String(currentEmpId));
+            const empName = _empForName ? _empForName.name : 'Nhân viên';
 
             Swal.fire({ title: 'Đang lưu dữ liệu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
@@ -1372,7 +1524,14 @@
                     handleEmployeeChange();
                     saveLocalState();
                     fetchDailyTop();
-                } catch(e) { Swal.fire('Lỗi', `Server: ${err.message}`, 'error'); }
+                } catch(e) {
+                    addToPendingQueue({ type: 'log', data: logData });
+                    Swal.fire({ title: '💾 Lưu Offline', icon: 'warning', html: `<div class="text-sm text-orange-600 font-bold mb-2 p-2 bg-orange-50 rounded-lg border border-orange-200">⚠️ Mất kết nối – Ca làm được lưu tạm, sẽ tự đồng bộ khi có mạng.</div>${successHtml}` });
+                    fetch(`${API_URL}/active-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employeeId: currentEmpId, action: 'end' }) }).catch(()=>{});
+                    delete activeSessions[currentEmpId];
+                    handleEmployeeChange();
+                    saveLocalState();
+                }
             }
         }
 
@@ -1844,8 +2003,9 @@
                             Swal.fire({ title: 'Thành công (DB Trực tiếp)', icon: 'success', html: successHtmlGroup });
                             finishGroup();
                         } catch(err) {
-                            const errMsg = err?.message || err?.details || JSON.stringify(err) || 'Lỗi không xác định';
-                            Swal.fire('Lỗi nghiêm trọng', `Không thể lưu vào CSDL: ${errMsg}`, 'error');
+                            addToPendingQueue({ type: 'log', data: logsArray });
+                            Swal.fire({ title: '💾 Lưu Offline', icon: 'warning', html: `<div class="text-sm text-orange-600 font-bold mb-2 p-2 bg-orange-50 rounded-lg border border-orange-200">⚠️ Mất kết nối – Ca nhóm được lưu tạm, sẽ tự đồng bộ khi có mạng.</div>${successHtmlGroup}` });
+                            finishGroup();
                         }
                     }
                 }
@@ -2235,6 +2395,7 @@
                                 <td class="p-4 border-b border-gray-100 text-center font-bold text-red-600 whitespace-nowrap">x${log.coefficient || 1}</td>
                                 <td class="p-4 border-b border-gray-100 font-black text-green-600 text-right text-lg whitespace-nowrap">+ ${tVal}</td>
                                 <td class="p-4 border-b border-gray-100 text-gray-600 text-center whitespace-nowrap">${timeStr}</td>
+                                <td class="p-4 border-b border-gray-100 text-center font-bold text-purple-600 whitespace-nowrap">${totalTime > 0 && Number(log.total_orders) > 0 ? (totalTime / Number(log.total_orders)).toFixed(1) + 's' : '--'}</td>
                                 <td class="p-4 border-b border-gray-100 text-center">
                                     <button onclick="viewHistoryCodes(${index})" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-colors whitespace-nowrap">👁️ Xem</button>
                                     ${delBtn}
@@ -2927,17 +3088,308 @@
             container.innerHTML = html;
         }
 
+        // ==========================================
+        // MODULE QR SCANNER
+        // ==========================================
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 1400;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.12);
+            } catch {}
+        }
+
+        let html5QrCode = null;
+        let qrScannedCodes = [];
+        let qrCurrentSession = '';
+        let qrIsScanning = false;
+
+        function openQRScanner() {
+            document.getElementById('qrScannerModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            const sel = document.getElementById('qrSessionSelect');
+            sel.innerHTML = '<option value="">-- Chọn ca làm --</option>';
+            allIndShifts.forEach(s => { sel.innerHTML += `<option value="${s}">${s}</option>`; });
+            qrScannedCodes = [];
+            qrCurrentSession = '';
+            qrIsScanning = false;
+            document.getElementById('qrStep2').classList.add('hidden');
+            document.getElementById('qrStep1').classList.remove('hidden');
+            document.getElementById('qrStartBtn').classList.remove('hidden');
+            document.getElementById('qrStopBtn').classList.add('hidden');
+            document.getElementById('qrSaveBtn').classList.add('hidden');
+            document.getElementById('qrLastScanned').classList.add('hidden');
+            document.getElementById('qrCountDisplay').textContent = '0 đơn';
+            document.getElementById('qrModalSubtitle').textContent = 'Chọn ca làm để bắt đầu';
+            document.getElementById('qrReaderDiv').innerHTML = '';
+        }
+
+        async function closeQRScanner() {
+            if (html5QrCode && qrIsScanning) {
+                try { await html5QrCode.stop(); } catch {}
+                qrIsScanning = false;
+            }
+            document.getElementById('qrScannerModal').classList.add('hidden');
+            document.body.style.overflow = '';
+            document.getElementById('qrReaderDiv').innerHTML = '';
+            qrScannedCodes = [];
+            qrCurrentSession = '';
+        }
+
+        async function startQRCamera() {
+            const sessionName = document.getElementById('qrSessionSelect').value;
+            if (!sessionName) return Swal.fire('Cảnh báo', 'Vui lòng chọn ca làm trước!', 'warning');
+
+            qrCurrentSession = sessionName;
+            document.getElementById('qrModalSubtitle').textContent = `Ca: ${sessionName}`;
+            document.getElementById('qrStep1').classList.add('hidden');
+            document.getElementById('qrStep2').classList.remove('hidden');
+            document.getElementById('qrStartBtn').classList.add('hidden');
+            document.getElementById('qrStopBtn').classList.remove('hidden');
+            document.getElementById('qrReaderDiv').innerHTML = '';
+
+            if (html5QrCode && qrIsScanning) {
+                try { await html5QrCode.stop(); } catch {}
+            }
+
+            try {
+                html5QrCode = new Html5Qrcode('qrReaderDiv');
+                qrIsScanning = true;
+                await html5QrCode.start(
+                    { facingMode: 'environment' },
+                    { fps: 15, qrbox: { width: 260, height: 260 } },
+                    (decodedText) => {
+                        const code = decodedText.trim();
+                        if (!qrScannedCodes.includes(code)) {
+                            qrScannedCodes.push(code);
+                            document.getElementById('qrCountDisplay').textContent = `${qrScannedCodes.length} đơn`;
+                            const lastEl = document.getElementById('qrLastScanned');
+                            document.getElementById('qrLastCode').textContent = code;
+                            lastEl.classList.remove('hidden');
+                            lastEl.style.animation = 'none';
+                            lastEl.offsetHeight;
+                            lastEl.style.animation = 'qrFlash 0.4s ease';
+                            playBeep();
+                        }
+                    },
+                    () => {}
+                );
+            } catch(e) {
+                qrIsScanning = false;
+                Swal.fire('Lỗi camera', 'Không thể mở camera: ' + (e.message || e), 'error');
+                document.getElementById('qrStartBtn').classList.remove('hidden');
+                document.getElementById('qrStopBtn').classList.add('hidden');
+            }
+        }
+
+        async function stopQRCamera() {
+            if (html5QrCode && qrIsScanning) {
+                try { await html5QrCode.stop(); } catch {}
+                qrIsScanning = false;
+            }
+            document.getElementById('qrStartBtn').classList.remove('hidden');
+            document.getElementById('qrStopBtn').classList.add('hidden');
+            if (qrScannedCodes.length > 0) {
+                document.getElementById('qrSaveBtn').classList.remove('hidden');
+            }
+        }
+
+        function clearQRCodes() {
+            qrScannedCodes = [];
+            document.getElementById('qrCountDisplay').textContent = '0 đơn';
+            document.getElementById('qrLastScanned').classList.add('hidden');
+            document.getElementById('qrSaveBtn').classList.add('hidden');
+        }
+
+        async function saveQRBatch() {
+            if (qrScannedCodes.length === 0) return Swal.fire('Trống', 'Chưa quét được mã nào!', 'warning');
+            if (!qrCurrentSession) return Swal.fire('Lỗi', 'Chưa chọn ca làm!', 'error');
+
+            await stopQRCamera();
+            Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                const { error } = await supabaseClient.from('scan_batches').insert({
+                    session_name: qrCurrentSession,
+                    order_codes: qrScannedCodes.join('\n'),
+                    total_orders: qrScannedCodes.length,
+                    status: 'pending'
+                });
+                if (error) throw error;
+
+                const count = qrScannedCodes.length;
+                const sess = qrCurrentSession;
+                await closeQRScanner();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `✅ Lưu batch ${count} đơn — Ca "${sess}"!`, timer: 2500, showConfirmButton: false });
+
+                const curSession = document.getElementById('sessionSelect')?.value;
+                if (curSession === sess) loadScanBatches(sess);
+                fetchPendingBatches();
+            } catch(e) {
+                Swal.fire('Lỗi', 'Không thể lưu batch: ' + e.message, 'error');
+            }
+        }
+
+        // ==========================================
+        // MODULE BATCH PICKER
+        // ==========================================
+        async function loadScanBatches(sessionName) {
+            const section = document.getElementById('scanBatchSection');
+            if (!section) return;
+            if (!sessionName) { section.classList.add('hidden'); return; }
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const { data, error } = await supabaseClient
+                .from('scan_batches')
+                .select('id, session_name, total_orders, status, created_at')
+                .eq('session_name', sessionName)
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error || !data || data.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+            const pending = data.filter(b => b.status === 'pending').length;
+            const countEl = document.getElementById('scanBatchCount');
+            if (countEl) countEl.textContent = pending > 0 ? `${pending} chờ` : '';
+
+            const list = document.getElementById('scanBatchList');
+            if (!list) return;
+
+            list.innerHTML = data.map(b => {
+                const claimed = b.status === 'claimed';
+                const dt = new Date(b.created_at);
+                const timeStr = dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' · ' + dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                return `
+                    <div class="flex items-center justify-between p-3 rounded-xl border ${claimed ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-white border-purple-200 hover:border-purple-400 hover:shadow-sm'} transition-all">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="text-xl flex-shrink-0">${claimed ? '✅' : '📦'}</div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-gray-800 text-sm">${b.session_name} <span class="text-purple-700 font-black">${b.total_orders} đơn</span></div>
+                                <div class="text-xs text-gray-400">${timeStr} · ${claimed ? '<span class="text-green-600 font-bold">Đã sử dụng</span>' : '<span class="text-orange-500 font-bold">Chờ nhận</span>'}</div>
+                            </div>
+                        </div>
+                        ${!claimed ? `<button onclick="claimBatch('${b.id}')" class="ml-3 bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition-colors text-sm flex-shrink-0 shadow-sm">Nhận</button>` : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        async function claimBatch(batchId) {
+            if (!currentEmpId) return Swal.fire('Cảnh báo', 'Chọn nhân viên trước!', 'warning');
+            if (!activeSessions[currentEmpId] || activeSessions[currentEmpId].isRemote) {
+                return Swal.fire('Cảnh báo', 'Bắt đầu ca làm trước khi nhận batch!', 'warning');
+            }
+            if (activeSessions[currentEmpId].isPaused) {
+                return Swal.fire('Cảnh báo', 'Ca đang tạm dừng! Bấm Tiếp Tục trước.', 'warning');
+            }
+
+            const { data, error } = await supabaseClient.from('scan_batches').select('order_codes, total_orders').eq('id', batchId).single();
+            if (error || !data) return Swal.fire('Lỗi', 'Không tải được batch!', 'error');
+
+            const textarea = document.getElementById('orderCodes');
+            const existing = textarea.value.split('\n').map(c => c.trim()).filter(c => c);
+            const newCodes = data.order_codes.split('\n').map(c => c.trim()).filter(c => c);
+            const merged = [...new Set([...existing, ...newCodes])];
+
+            textarea.value = merged.join('\n');
+            activeSessions[currentEmpId].codes = textarea.value;
+            updateCounter();
+            saveLocalState();
+
+            await supabaseClient.from('scan_batches').update({
+                status: 'claimed',
+                claimed_by: currentEmpId,
+                claimed_at: new Date().toISOString()
+            }).eq('id', batchId);
+
+            loadScanBatches(document.getElementById('sessionSelect')?.value);
+            fetchPendingBatches();
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `✅ Nhận ${newCodes.length} đơn vào ca!`, timer: 1500, showConfirmButton: false });
+        }
+
         // Khởi chạy App
         restoreLocalState();
 
+        window.addEventListener('online', () => {
+            updateOfflineUI();
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '🌐 Đã có mạng! Đang đồng bộ...', timer: 2000, showConfirmButton: false });
+            processPendingQueue();
+        });
+        window.addEventListener('offline', () => {
+            updateOfflineUI();
+            Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: '📡 Mất kết nối – Ca làm vẫn lưu được!', timer: 2500, showConfirmButton: false });
+        });
+
+        document.getElementById('sessionSelect')?.addEventListener('change', (e) => {
+            loadScanBatches(e.target.value);
+        });
+
         (async () => {
             await loadEmployeesForSelect();
+            restoreCurrentEmployee();
             updateTeamFields();
             fetchDailyTop();
             fetchEvents();
+            fetchPendingBatches();
+            updateOfflineUI();
+            if (navigator.onLine) processPendingQueue();
         })();
-        
+
+        async function fetchPendingBatches() {
+            const container = document.getElementById('sidePendingBatches');
+            const badge = document.getElementById('pendingBatchBadge');
+            if (!container) return;
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const { data, error } = await supabaseClient
+                .from('scan_batches')
+                .select('id, session_name, total_orders, created_at')
+                .eq('status', 'pending')
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error || !data || data.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 text-xs py-3 font-medium">Không có ca nào đang chờ</div>';
+                if (badge) badge.classList.add('hidden');
+                return;
+            }
+
+            if (badge) { badge.textContent = data.length; badge.classList.remove('hidden'); }
+
+            container.innerHTML = data.map(b => {
+                const dt = new Date(b.created_at);
+                const timeStr = dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                return `
+                    <div class="flex justify-between items-center py-1.5 border-b border-orange-100 last:border-0">
+                        <div class="min-w-0 flex-1">
+                            <div class="font-bold text-gray-700 text-xs truncate leading-tight" title="${b.session_name}">${b.session_name}</div>
+                            <div class="text-gray-400 text-[10px]">${timeStr} · ${dateStr}</div>
+                        </div>
+                        <span class="font-black text-orange-600 text-sm flex-shrink-0 ml-2">${b.total_orders}</span>
+                    </div>`;
+            }).join('');
+        }
+
         setInterval(fetchDailyTop, 15000);
+        setInterval(fetchPendingBatches, 20000);
 
     </script>
 </body>
