@@ -285,6 +285,7 @@
             <div class="flex gap-2 mb-4">
                 <button id="tabBtnChinhThuc" onclick="switchEmpTab('chinhthuc')" class="px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-blue-600 text-white shadow transition-colors">Chính thức</button>
                 <button id="tabBtnThoiVu" onclick="switchEmpTab('thoivu')" class="px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-white text-amber-600 shadow transition-colors">Thời vụ</button>
+                <button id="tabBtnDaNghi" onclick="switchEmpTab('dannghi')" class="px-5 py-2 rounded-lg font-bold text-sm border-2 border-gray-400 bg-white text-gray-500 shadow transition-colors">Đã nghỉ</button>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -799,6 +800,7 @@
             updateSaleUI();
             handleEmployeeChange();
             renderActiveGroups();
+            loadEmployeesTable(true);
         }
 
         // ==========================================
@@ -1094,7 +1096,7 @@
 
         function switchTab(tabId) {
             const pin = TAB_PINS[tabId];
-            if (pin && !tabAuthenticated[tabId] && !isAdminAuthenticated) {
+            if (pin && !isAdminAuthenticated) {
                 Swal.fire({
                     title: `🔒 ${TAB_LABELS[tabId] || tabId}`,
                     text: 'Nhập mã PIN để truy cập:',
@@ -1104,7 +1106,6 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         if (result.value === pin || result.value === ADMIN_PIN) {
-                            tabAuthenticated[tabId] = true;
                             if (result.value === ADMIN_PIN) { isAdminAuthenticated = true; isManagerAuthenticated = true; checkAdminUI(); }
                             Swal.fire({ icon: 'success', title: 'Đã mở khóa!', timer: 1000, showConfirmButton: false })
                                 .then(() => executeSwitchTab(tabId));
@@ -1861,7 +1862,7 @@
 
             const searchQ = (document.getElementById('groupEmpSearch')?.value || '').toLowerCase().trim();
             const matchSearch = (e) => !searchQ || (e.name || '').toLowerCase().includes(searchQ);
-            const chinhThuc = allEmployees.filter(e => e.role !== 'Tổ' && e.role !== 'Thời vụ' && matchSearch(e));
+            const chinhThuc = allEmployees.filter(e => e.role !== 'Tổ' && e.role !== 'Thời vụ' && e.role !== 'Đã nghỉ' && matchSearch(e));
             const thoiVu = allEmployees.filter(e => e.role === 'Thời vụ' && getLocalDateString(e.created_at) === _tvToday && matchSearch(e));
 
             container.innerHTML = `
@@ -1885,7 +1886,7 @@
                 </div>`;
         }
 
-        function startCreatedGroup() {
+        async function startCreatedGroup() {
             if (tempGroupSelection.length < 2) return Swal.fire('Cảnh báo', 'Nhóm phải có ít nhất 2 thành viên!', 'warning');
             const sessionName = document.getElementById('newGroupSessionSelect').value;
             const coeff = parseFloat(document.getElementById('newGroupCoefficient').value);
@@ -1893,12 +1894,32 @@
             if (!sessionName) return Swal.fire('Cảnh báo', 'Vui lòng Chọn Tên Ca Nhóm!', 'warning');
             if (isNaN(coeff) || coeff <= 0) return Swal.fire('Cảnh báo', 'Vui lòng nhập Hệ số nhóm hợp lệ!', 'warning');
 
+            // Fetch trạng thái mới nhất từ server trước khi validate
+            const freshBusyMembers = new Set();
+            const freshBusyInd = new Set();
+            try {
+                const res = await fetch(`${API_URL}/active-sessions`);
+                if (res.ok) {
+                    const srv = await res.json();
+                    for (let k in srv) {
+                        if (k.startsWith('GROUP_')) {
+                            (srv[k].members || []).forEach(id => freshBusyMembers.add(String(id)));
+                        } else {
+                            freshBusyInd.add(String(k));
+                        }
+                    }
+                }
+            } catch(e) {
+                // fallback: dùng local state
+                Object.values(activeGroupSessions).forEach(grp => (grp.members || []).forEach(id => freshBusyMembers.add(String(id))));
+                Object.keys(activeSessions).forEach(id => freshBusyInd.add(id));
+            }
+
             for (const empId of tempGroupSelection) {
                 const emp = allEmployees.find(e => String(e.id) === String(empId));
                 const empName = emp ? emp.name : 'Nhân viên';
-                if (activeSessions[empId]) return Swal.fire('Cảnh báo', `"${empName}" đang có ca cá nhân đang chạy!`, 'warning');
-                const inOtherGroup = Object.values(activeGroupSessions).some(grp => grp.members && grp.members.map(String).includes(String(empId)));
-                if (inOtherGroup) return Swal.fire('Cảnh báo', `"${empName}" đang trong ca nhóm khác!`, 'warning');
+                if (freshBusyInd.has(String(empId))) return Swal.fire('Cảnh báo', `"${empName}" đang có ca cá nhân đang chạy!`, 'warning');
+                if (freshBusyMembers.has(String(empId))) return Swal.fire('Cảnh báo', `"${empName}" đang trong nhóm khác!`, 'warning');
             }
 
             const groupId = 'group_' + Date.now();
@@ -2807,7 +2828,7 @@
             const savedId = select.value; 
             select.innerHTML = '<option value="">-- Bấm để chọn nhân viên --</option>';
     
-            const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ');
+            const employeesForSelect = allEmployees.filter(emp => emp.role !== 'Tổ' && emp.role !== 'Đã nghỉ');
             employeesForSelect.forEach(emp => { 
                 const isWorking = Boolean(activeSessions[emp.id]);
                 const isPaused = isWorking && activeSessions[emp.id].isPaused;
@@ -3018,18 +3039,16 @@
             _currentEmpTab = tab;
             const btnC = document.getElementById('tabBtnChinhThuc');
             const btnT = document.getElementById('tabBtnThoiVu');
-            if (tab === 'chinhthuc') {
-                btnC.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-blue-600 text-white shadow transition-colors';
-                btnT.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-white text-amber-600 shadow transition-colors';
-            } else {
-                btnC.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-white text-blue-600 shadow transition-colors';
-                btnT.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-amber-500 text-white shadow transition-colors';
-            }
-            // Đồng bộ form với tab
-            const roleEl = document.getElementById('empRole');
-            if (roleEl) {
-                roleEl.value = (tab === 'thoivu') ? 'Thời vụ' : 'Nhân viên';
-                updateTeamFields();
+            const btnD = document.getElementById('tabBtnDaNghi');
+            btnC.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-white text-blue-600 shadow transition-colors';
+            btnT.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-white text-amber-600 shadow transition-colors';
+            btnD.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-gray-400 bg-white text-gray-500 shadow transition-colors';
+            if (tab === 'chinhthuc') btnC.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-blue-600 text-white shadow transition-colors';
+            else if (tab === 'thoivu') btnT.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-amber-500 text-white shadow transition-colors';
+            else if (tab === 'dannghi') btnD.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-gray-500 bg-gray-500 text-white shadow transition-colors';
+            if (tab !== 'dannghi') {
+                const roleEl = document.getElementById('empRole');
+                if (roleEl) { roleEl.value = (tab === 'thoivu') ? 'Thời vụ' : 'Nhân viên'; updateTeamFields(); }
             }
             loadEmployeesTable(true);
         }
@@ -3051,18 +3070,39 @@
                     <td class="p-3 text-center">
                         <button onclick="openEditModal('${emp.id}')" class="bg-green-100 text-green-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-green-200 shadow-sm transition-colors cursor-pointer">✏️ Sửa</button>
                         <button onclick="openHistoryModal('${emp.id}', '${safeName}')" class="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors cursor-pointer ml-2">🕒 Lịch sử</button>
+                        ${isAdminAuthenticated ? `<button onclick="markResigned('${emp.id}')" class="bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-orange-200 shadow-sm transition-colors cursor-pointer ml-2">🚫 Nghỉ</button>` : ''}
                         ${isAdminAuthenticated ? `<button onclick="deleteEmployee('${emp.id}')" class="bg-red-100 text-red-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-red-200 shadow-sm transition-colors cursor-pointer ml-2">🗑️ Xóa</button>` : ''}
                     </td>
                 </tr>`;
             };
 
-            const list = _currentEmpTab === 'chinhthuc'
-                ? allEmployees.filter(emp => emp.role !== 'Tổ' && emp.role !== 'Thời vụ')
-                : allEmployees.filter(emp => emp.role === 'Thời vụ');
+            const buildResignedRow = (emp) => {
+                const empNameStr = emp.name || 'Unknown';
+                const avatar = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
+                const safeName = empNameStr.replace(/'/g, "\\'");
+                return `<tr class="border-b transition-colors bg-gray-50 opacity-75">
+                    <td class="p-3"><img src="${avatar}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-200 grayscale"></td>
+                    <td class="p-3 font-bold text-gray-500">${empNameStr}</td>
+                    <td class="p-3"><span class="bg-gray-200 text-gray-500 px-3 py-1 rounded-full text-xs font-bold">Đã nghỉ</span></td>
+                    <td class="p-3 text-gray-400">${emp.hometown || '...'}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="restoreEmployee('${emp.id}')" class="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-green-200 shadow-sm transition-colors cursor-pointer">↩️ Phục hồi</button>
+                        <button onclick="openHistoryModal('${emp.id}', '${safeName}')" class="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors cursor-pointer ml-2">🕒 Lịch sử</button>
+                        ${isAdminAuthenticated ? `<button onclick="deleteEmployee('${emp.id}')" class="bg-red-100 text-red-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-red-200 shadow-sm transition-colors cursor-pointer ml-2">🗑️ Xóa</button>` : ''}
+                    </td>
+                </tr>`;
+            };
 
+            let list;
+            if (_currentEmpTab === 'chinhthuc') list = allEmployees.filter(emp => emp.role !== 'Tổ' && emp.role !== 'Thời vụ' && emp.role !== 'Đã nghỉ');
+            else if (_currentEmpTab === 'thoivu') list = allEmployees.filter(emp => emp.role === 'Thời vụ');
+            else list = allEmployees.filter(emp => emp.role === 'Đã nghỉ');
+
+            const rowFn = _currentEmpTab === 'dannghi' ? buildResignedRow : buildRow;
+            const emptyMsg = _currentEmpTab === 'dannghi' ? 'Không có nhân viên đã nghỉ' : 'Chưa có nhân viên';
             tbody.innerHTML = list.length > 0
-                ? list.map(buildRow).join('')
-                : `<tr><td colspan="5" class="p-6 text-center text-gray-400 text-sm">Chưa có nhân viên</td></tr>`;
+                ? list.map(rowFn).join('')
+                : `<tr><td colspan="5" class="p-6 text-center text-gray-400 text-sm">${emptyMsg}</td></tr>`;
 
             renderTeamList();
         }
@@ -3214,6 +3254,45 @@
                 Swal.fire('Đã xóa', `Tổ ${teamName} đã được xóa.`, 'success');
                 refreshAllViews();
             } catch (error) { Swal.fire('Lỗi', error.message, 'error'); }
+        }
+
+        async function markResigned(empId) {
+            if (!isAdminAuthenticated) return Swal.fire('Không có quyền', 'Chỉ Admin mới có thể thực hiện!', 'warning');
+            const emp = allEmployees.find(e => String(e.id) === String(empId));
+            if (!emp) return;
+            const result = await Swal.fire({
+                title: 'Đánh dấu đã nghỉ?',
+                text: `${emp.name} sẽ bị ẩn khỏi danh sách làm việc`,
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: 'Xác nhận nghỉ', cancelButtonText: 'Hủy', confirmButtonColor: '#f97316'
+            });
+            if (!result.isConfirmed) return;
+            try {
+                Swal.fire({ title: 'Đang cập nhật...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const { error } = await supabaseClient.from('employees').update({ role: 'Đã nghỉ' }).eq('id', empId);
+                if (error) throw error;
+                Swal.fire({ icon: 'success', title: 'Đã đánh dấu nghỉ!', timer: 1500, showConfirmButton: false });
+                await refreshAllViews();
+            } catch(e) { Swal.fire('Lỗi', e.message, 'error'); }
+        }
+
+        async function restoreEmployee(empId) {
+            const emp = allEmployees.find(e => String(e.id) === String(empId));
+            if (!emp) return;
+            const result = await Swal.fire({
+                title: 'Phục hồi nhân viên?',
+                text: `${emp.name} sẽ được trả về chức vụ Nhân viên`,
+                icon: 'question', showCancelButton: true,
+                confirmButtonText: 'Phục hồi', cancelButtonText: 'Hủy', confirmButtonColor: '#16a34a'
+            });
+            if (!result.isConfirmed) return;
+            try {
+                Swal.fire({ title: 'Đang cập nhật...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const { error } = await supabaseClient.from('employees').update({ role: 'Nhân viên' }).eq('id', empId);
+                if (error) throw error;
+                Swal.fire({ icon: 'success', title: 'Đã phục hồi!', timer: 1500, showConfirmButton: false });
+                await refreshAllViews();
+            } catch(e) { Swal.fire('Lỗi', e.message, 'error'); }
         }
 
         async function deleteEmployee(empId) {
