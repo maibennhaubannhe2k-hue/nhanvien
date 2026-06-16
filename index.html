@@ -67,6 +67,7 @@
         <div class="w-full px-2 xl:px-6 mx-auto flex gap-4 overflow-x-auto items-center justify-between">
             <div class="flex gap-2 lg:gap-4 items-center shrink-0">
                 <h1 class="text-xl font-bold mr-4 whitespace-nowrap">📦 ACBT Pro</h1>
+                <button onclick="switchTab('home')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">🏠 Trang Chủ</button>
                 <button onclick="switchTab('input')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">🕒 Cá Nhân</button>
                 <button onclick="switchTab('group')" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded font-semibold transition shadow whitespace-nowrap">👥 Làm Nhóm</button>
                 <button onclick="switchTab('employees')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">👥 Hồ Sơ</button>
@@ -74,6 +75,7 @@
                 <button onclick="switchTab('dashboard')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition border border-blue-400 whitespace-nowrap">📊 Dash: Cá Nhân</button>
                 <button onclick="switchTab('dashboardGroup')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition border border-blue-400 whitespace-nowrap">📈 Dash: Nhóm</button>
                 <button onclick="switchTab('leaderboardFull')" class="bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded font-bold transition shadow whitespace-nowrap text-white border border-orange-300">🏆 BXH Hiệu Suất</button>
+                <button onclick="switchTab('settings')" class="hover:bg-blue-600 px-3 py-2 rounded font-semibold transition whitespace-nowrap">⚙️ Cài Đặt</button>
             </div>
             
             <div class="flex items-center gap-3 shrink-0">
@@ -89,7 +91,18 @@
 
     <div class="w-full xl:w-[calc(100%-280px)] xl:ml-[280px] p-4 xl:p-8 mt-2 transition-all duration-300"> 
         
-        <div id="input" class="tab-content active bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div id="home" class="tab-content active bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" style="min-height:400px">
+            <div class="bg-blue-800 text-white py-6 px-8 text-center">
+                <h1 class="text-3xl font-black tracking-wide">📦 ACBT Pro</h1>
+            </div>
+            <div class="flex flex-col items-center justify-center py-24 px-8 gap-8">
+                <div class="w-full overflow-hidden bg-yellow-50 border-2 border-yellow-300 rounded-xl py-4 px-6">
+                    <marquee class="text-yellow-700 font-bold text-lg">🚧&nbsp;&nbsp;Trang chủ đang trong giai đoạn update — vui lòng quay lại sau!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🚧&nbsp;&nbsp;Trang chủ đang trong giai đoạn update — vui lòng quay lại sau!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</marquee>
+                </div>
+            </div>
+        </div>
+
+        <div id="input" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h2 class="text-2xl font-bold mb-4 text-blue-800 border-b pb-2">Phiên Làm Việc Cá Nhân</h2>
             
             <div class="bg-blue-50 p-5 rounded-lg mb-6 flex flex-col gap-4 border border-blue-200 shadow-sm">
@@ -128,12 +141,12 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                <div class="xl:col-span-2 bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 border-b border-gray-200 pb-2">
                         <div class="font-bold text-gray-800 text-lg">Danh sách nhân viên</div>
                     </div>
-                    <div id="employeeList" class="overflow-y-auto pr-2 max-h-[340px] space-y-4"></div>
+                    <div id="employeeList"></div>
                 </div>
 
                 <div class="relative flex flex-col">
@@ -155,6 +168,15 @@
                 <div id="scanBatchList" class="p-4 space-y-2 max-h-[260px] overflow-y-auto"></div>
             </div>
 
+            <!-- ĐANG LÀM -->
+            <div id="workingBar" class="hidden rounded-xl border-2 border-green-200 bg-green-50 shadow-sm mb-4">
+                <div class="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-t-xl">
+                    <span class="w-2.5 h-2.5 rounded-full bg-white inline-block animate-pulse"></span>
+                    <span class="text-white font-bold text-sm" id="workingBarTitle">Đang làm (0)</span>
+                </div>
+                <div id="workingBarList" class="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2"></div>
+            </div>
+
             <!-- BẢNG EVENT - FULL WIDTH -->
             <div class="bg-white rounded-xl border-2 border-purple-200 shadow-sm">
                 <div class="flex items-center justify-between px-5 py-3 bg-purple-50 rounded-t-xl border-b border-purple-100">
@@ -173,8 +195,7 @@
         <div id="group" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200 min-h-[700px]">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-indigo-800">Cỗ Máy Chia Đơn - Đa Nhóm</h2>
-                    <p class="text-sm text-gray-600 mt-1">Tạo nhiều nhóm làm việc song song, tự động chia đều sản lượng cho các thành viên.</p>
+                    <h2 class="text-2xl font-bold text-indigo-800">Đa Nhóm</h2>
                 </div>
                 <button onclick="openGroupCreation()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition flex items-center gap-2 transform hover:scale-105">
                     <span class="text-2xl font-black leading-none">+</span> Bắt Đầu Nhóm Mới
@@ -189,13 +210,16 @@
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-2">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
-                            <label class="block text-sm font-bold text-indigo-800 bg-indigo-100 py-1.5 px-3 rounded-lg inline-block">1. Click chọn các thành viên:</label>
-                            <select id="quickSelectTeam" onchange="selectTeamMembers(this.value)" class="border-2 border-indigo-400 py-1.5 px-3 rounded-lg font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer shadow-sm text-sm w-full sm:w-auto">
-                                <option value="">⚡ Chọn nhanh theo Tổ</option>
-                            </select>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-3">
+                            <label class="block text-sm font-bold text-indigo-800 bg-indigo-100 py-1.5 px-3 rounded-lg inline-block shrink-0">1. Click chọn các thành viên:</label>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <input type="text" id="groupEmpSearch" oninput="renderGroupCreatorList()" placeholder="🔍 Tìm tên..." class="flex-1 border-2 border-indigo-300 py-1.5 px-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+                                <select id="quickSelectTeam" onchange="selectTeamMembers(this.value)" class="border-2 border-indigo-400 py-1.5 px-3 rounded-lg font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer shadow-sm text-sm">
+                                    <option value="">⚡ Chọn nhanh theo Tổ</option>
+                                </select>
+                            </div>
                         </div>
-                        <div id="groupCreatorList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-3 bg-white rounded-lg border border-indigo-200 shadow-inner">
+                        <div id="groupCreatorList" class="bg-white rounded-lg border border-indigo-200 shadow-inner overflow-hidden" style="height:240px">
                         </div>
                     </div>
                     <div class="flex flex-col justify-center bg-white p-5 rounded-lg border border-indigo-100 shadow-sm">
@@ -215,7 +239,7 @@
                 </div>
             </div>
 
-            <div id="activeGroupsContainer" class="grid grid-cols-1 gap-6"></div>
+            <div id="activeGroupsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
         </div>
 
         <div id="employees" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -230,8 +254,9 @@
                             <option value="Quản lý">Quản lý</option>
                             <option value="Tổ trưởng">Tổ trưởng</option>
                             <option value="Nhân viên" selected>Nhân viên</option>
+                            <option value="Thời vụ">Thời vụ</option>
                         </select>
-                        <div id="teamSection" style="display:block;" class="sm:col-span-2">
+                        <div id="teamSection" class="sm:col-span-2">
                             <select id="empTeamNameSelect" class="border-2 border-blue-200 p-2.5 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
                                 <option value="">-- Chọn tổ cho nhân viên --</option>
                             </select>
@@ -255,6 +280,11 @@
                         <div id="teamList" class="space-y-3"></div>
                     </div>
                 </div>
+            </div>
+
+            <div class="flex gap-2 mb-4">
+                <button id="tabBtnChinhThuc" onclick="switchEmpTab('chinhthuc')" class="px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-blue-600 text-white shadow transition-colors">Chính thức</button>
+                <button id="tabBtnThoiVu" onclick="switchEmpTab('thoivu')" class="px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-white text-amber-600 shadow transition-colors">Thời vụ</button>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -376,6 +406,83 @@
                         <div class="text-center text-indigo-400 italic py-8">Đang tải dữ liệu...</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div id="settings" class="tab-content bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">⚙️ Cài Đặt Mã PIN</h2>
+            <p class="text-sm text-gray-500 mb-6">Mỗi tab có mã PIN riêng. Để trống = không cần PIN. Admin PIN luôn mở được tất cả.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div class="font-bold text-slate-700 text-sm mb-2">🕒 Cá Nhân</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_input" placeholder="Để trống = không cần PIN" class="flex-1 border border-slate-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400">
+                        <button onclick="saveTabPin('input')" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+                <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                    <div class="font-bold text-indigo-700 text-sm mb-2">👥 Làm Nhóm</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_group" placeholder="Để trống = không cần PIN" class="flex-1 border border-indigo-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                        <button onclick="saveTabPin('group')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div class="font-bold text-blue-700 text-sm mb-2">📋 Hồ Sơ</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_employees" placeholder="Để trống = không cần PIN" class="flex-1 border border-blue-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <button onclick="saveTabPin('employees')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+                <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
+                    <div class="font-bold text-cyan-700 text-sm mb-2">🗂️ Sơ Đồ</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_orgchart" placeholder="Để trống = không cần PIN" class="flex-1 border border-cyan-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                        <button onclick="saveTabPin('orgchart')" class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <div class="font-bold text-green-700 text-sm mb-2">📊 Dash: Cá Nhân</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_dashboard" placeholder="Để trống = không cần PIN" class="flex-1 border border-green-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <button onclick="saveTabPin('dashboard')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                    <div class="font-bold text-teal-700 text-sm mb-2">📊 Dash: Nhóm</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_dashboardGroup" placeholder="Để trống = không cần PIN" class="flex-1 border border-teal-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400">
+                        <button onclick="saveTabPin('dashboardGroup')" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div class="font-bold text-amber-700 text-sm mb-2">🏆 BXH Hiệu Suất</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_leaderboardFull" placeholder="Để trống = không cần PIN" class="flex-1 border border-amber-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <button onclick="saveTabPin('leaderboardFull')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div class="font-bold text-gray-700 text-sm mb-2">⚙️ Cài Đặt</div>
+                    <div class="flex gap-2">
+                        <input type="password" id="pinField_settings" placeholder="Để trống = không cần PIN" class="flex-1 border border-gray-300 p-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400">
+                        <button onclick="saveTabPin('settings')" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors">Lưu</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 border-2 border-red-300 rounded-xl p-5">
+                <div class="font-bold text-red-800 mb-1">👑 Admin PIN — mở được tất cả tab</div>
+                <p class="text-xs text-gray-500 mb-3">Nhập PIN này ở bất kỳ tab nào là được vào, kể cả tab có PIN riêng</p>
+                <div class="flex gap-2">
+                    <input type="password" id="pinField_admin" placeholder="Nhập Admin PIN mới..." class="flex-1 border-2 border-red-300 p-2.5 rounded-lg font-mono text-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                    <button onclick="saveTabPin('admin')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold transition-colors">Lưu</button>
+                </div>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-400 text-center">
+                ⚠️ PIN lưu trên máy này (localStorage). Mỗi máy cần đặt riêng.
             </div>
         </div>
     </div>
@@ -632,12 +739,51 @@
         // ==========================================
         // 0. QUẢN LÝ QUYỀN LỰC
         // ==========================================
-        const MANAGER_PIN  = '8888';
-        const ADMIN_PIN    = 'luongdkz2000';
-        const SALE_PIN     = 'ACBT222';
+        let ADMIN_PIN = localStorage.getItem('pin_admin') || 'luongdkz2000';
+        let SALE_PIN  = localStorage.getItem('pin_sale')  || 'ACBT222';
+
+        const TAB_PINS = {
+            input:           localStorage.getItem('pin_tab_input')           || '',
+            group:           localStorage.getItem('pin_tab_group')           || '',
+            employees:       localStorage.getItem('pin_tab_employees')       || '',
+            orgchart:        localStorage.getItem('pin_tab_orgchart')        || '',
+            dashboard:       localStorage.getItem('pin_tab_dashboard')       || '',
+            dashboardGroup:  localStorage.getItem('pin_tab_dashboardGroup')  || '',
+            leaderboardFull: localStorage.getItem('pin_tab_leaderboardFull') || '',
+            settings:        localStorage.getItem('pin_tab_settings')        || '',
+        };
+        const tabAuthenticated = {
+            input: false, group: false, employees: false, orgchart: false,
+            dashboard: false, dashboardGroup: false, leaderboardFull: false, settings: false
+        };
+
+        function saveTabPin(tabId) {
+            if (tabId === 'admin') {
+                const val = document.getElementById('pinField_admin').value.trim();
+                if (!val) { Swal.fire({ icon: 'warning', title: 'Chưa nhập PIN!', timer: 1500, showConfirmButton: false }); return; }
+                ADMIN_PIN = val;
+                localStorage.setItem('pin_admin', val);
+                document.getElementById('pinField_admin').value = '';
+                Swal.fire({ icon: 'success', title: 'Đã lưu Admin PIN!', timer: 1500, showConfirmButton: false });
+                return;
+            }
+            if (tabId === 'sale') {
+                const val = document.getElementById('pinField_sale') ? document.getElementById('pinField_sale').value.trim() : '';
+                if (val) { SALE_PIN = val; localStorage.setItem('pin_sale', val); }
+                return;
+            }
+            const el = document.getElementById(`pinField_${tabId}`);
+            if (!el) return;
+            const val = el.value.trim();
+            TAB_PINS[tabId] = val;
+            localStorage.setItem(`pin_tab_${tabId}`, val);
+            tabAuthenticated[tabId] = false;
+            el.value = '';
+            Swal.fire({ icon: 'success', title: val ? `Đã lưu PIN cho tab!` : `Đã xóa PIN — tab mở tự do`, timer: 1500, showConfirmButton: false });
+        }
 
         let isManagerAuthenticated = false;
-        let isSaleAuthenticated    = false;    
+        let isSaleAuthenticated    = false;
         let isAdminAuthenticated   = false;    
 
         function checkAdminUI() {
@@ -663,9 +809,12 @@
             if (!suggestions) return;
             q = (q || '').toLowerCase().trim();
 
-            const list = allEmployees.filter(emp =>
-                emp.role !== 'Tổ' && (!q || (emp.name || '').toLowerCase().includes(q))
-            );
+            const _today = getLocalDateString(new Date());
+            const list = allEmployees.filter(emp => {
+                if (emp.role === 'Tổ') return false;
+                if (emp.role === 'Thời vụ' && getLocalDateString(emp.created_at) !== _today) return false;
+                return !q || (emp.name || '').toLowerCase().includes(q);
+            });
 
             if (list.length === 0) {
                 suggestions.innerHTML = '<div class="p-3 text-gray-400 text-sm text-center">Không tìm thấy</div>';
@@ -937,22 +1086,28 @@
             }
         }
 
+        const TAB_LABELS = {
+            input: 'Cá Nhân', group: 'Làm Nhóm', employees: 'Hồ Sơ',
+            orgchart: 'Sơ Đồ', dashboard: 'Dash: Cá Nhân', dashboardGroup: 'Dash: Nhóm',
+            leaderboardFull: 'BXH Hiệu Suất', settings: 'Cài Đặt'
+        };
+
         function switchTab(tabId) {
-            const managerTabs = ['employees', 'orgchart', 'dashboard', 'dashboardGroup', 'leaderboardFull'];
-            if (managerTabs.includes(tabId) && !isManagerAuthenticated) {
+            const pin = TAB_PINS[tabId];
+            if (pin && !tabAuthenticated[tabId] && !isAdminAuthenticated) {
                 Swal.fire({
-                    title: '🔒 Cần Mã PIN Quản Lý',
-                    text: 'Nhập mã PIN để xem khu vực này:',
+                    title: `🔒 ${TAB_LABELS[tabId] || tabId}`,
+                    text: 'Nhập mã PIN để truy cập:',
                     input: 'password',
                     inputAttributes: { autocapitalize: 'off', autocorrect: 'off', placeholder: 'Nhập mã PIN...' },
                     showCancelButton: true, confirmButtonText: 'Mở khóa', cancelButtonText: 'Hủy', confirmButtonColor: '#3b82f6',
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        if (result.value === MANAGER_PIN || result.value === ADMIN_PIN) {
-                            isManagerAuthenticated = true;
-                            if (result.value === ADMIN_PIN) { isAdminAuthenticated = true; checkAdminUI(); }
-                            Swal.fire({ icon: 'success', title: 'Đã mở khóa!', timer: 1200, showConfirmButton: false });
-                            executeSwitchTab(tabId);
+                        if (result.value === pin || result.value === ADMIN_PIN) {
+                            tabAuthenticated[tabId] = true;
+                            if (result.value === ADMIN_PIN) { isAdminAuthenticated = true; isManagerAuthenticated = true; checkAdminUI(); }
+                            Swal.fire({ icon: 'success', title: 'Đã mở khóa!', timer: 1000, showConfirmButton: false })
+                                .then(() => executeSwitchTab(tabId));
                         } else {
                             Swal.fire('Từ chối', 'Sai mã PIN!', 'error');
                         }
@@ -972,7 +1127,17 @@
             if(tabId === 'dashboardGroup') loadDashboards('group');
             if(tabId === 'leaderboardFull') loadPerformanceBoard();
             if(tabId === 'input') loadEmployeesForSelect();
-            if(tabId === 'group') renderActiveGroups(); 
+            if(tabId === 'group') renderActiveGroups();
+
+            const sidebar = document.querySelector('.fixed.left-4.top-24');
+            const mainArea = document.querySelector('.xl\\:w-\\[calc\\(100\\%-280px\\)\\]');
+            if (tabId === 'home') {
+                if (sidebar) sidebar.style.display = 'none';
+                if (mainArea) { mainArea.style.marginLeft = '0'; mainArea.style.width = '100%'; }
+            } else {
+                if (sidebar) sidebar.style.display = '';
+                if (mainArea) { mainArea.style.marginLeft = ''; mainArea.style.width = ''; }
+            }
         }
 
         // ==========================================
@@ -1560,6 +1725,20 @@
                 document.getElementById('sessionTimer').innerHTML = `🕒 ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             }
 
+            Object.entries(activeSessions).forEach(([empId, session]) => {
+                const el = document.getElementById(`workingTimer_${empId}`);
+                if (!el) return;
+                let totalSeconds = session.accumulatedTime || 0;
+                if (!session.isPaused && session.startTime) {
+                    const st = new Date(session.startTime);
+                    if (!isNaN(st.getTime())) totalSeconds += Math.floor((new Date() - st) / 1000);
+                }
+                const h = Math.floor(totalSeconds / 3600);
+                const m = Math.floor((totalSeconds % 3600) / 60);
+                const s = totalSeconds % 60;
+                el.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            });
+
             Object.keys(activeGroupSessions).forEach(groupId => {
                 const grp = activeGroupSessions[groupId];
                 const timerEl = document.getElementById(`timer_${groupId}`);
@@ -1648,44 +1827,62 @@
                 select.value = currentVal;
             }
 
-            let creatorHtml = '';
-            allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
-                const empIdStr = String(emp.id); 
+            const _tvToday = getLocalDateString(new Date());
+
+            const buildCreatorCard = (emp) => {
+                const empIdStr = String(emp.id);
                 const isSelected = tempGroupSelection.includes(empIdStr);
                 const isBusyInOtherGroup = busyEmpIdsInGroups.includes(empIdStr);
                 const isBusyInInd = Boolean(activeSessions[empIdStr]);
-
                 const empNameStr = emp.name || 'Unknown';
-                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
-                const avatar = emp.avatar_url || defaultAvatar;
+                const avatar = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
 
                 let btnClass = "w-full text-left p-2.5 border rounded-xl transition-all bg-white hover:bg-indigo-50 border-gray-200 group-card flex items-center gap-3";
                 let cursor = "cursor-pointer";
-
                 let statusHtml = "";
+
                 if (isBusyInOtherGroup) {
                     btnClass = "w-full text-left p-2.5 border rounded-xl bg-gray-100 border-gray-300 opacity-60 flex items-center gap-3 grayscale";
                     cursor = "cursor-not-allowed";
                     statusHtml = "<div class='text-[10px] text-red-500 font-bold mt-0.5'>Đang bận nhóm khác</div>";
                 } else {
-                    if (isBusyInInd) {
-                        statusHtml = "<div class='text-[10px] text-blue-500 font-bold mt-0.5'>Đang chạy C.Nhân</div>";
-                    }
-                    if (isSelected) {
-                        btnClass = "w-full text-left p-2.5 border-2 rounded-xl transition-all selected group-card border-indigo-500 bg-indigo-100 shadow-sm flex items-center gap-3 transform scale-[1.02]";
-                    }
+                    if (isBusyInInd) statusHtml = "<div class='text-[10px] text-blue-500 font-bold mt-0.5'>Đang chạy C.Nhân</div>";
+                    if (isSelected) btnClass = "w-full text-left p-2.5 border-2 rounded-xl transition-all selected group-card border-indigo-500 bg-indigo-100 shadow-sm flex items-center gap-3 transform scale-[1.02]";
                 }
 
-                creatorHtml += `
-                    <button type="button" class="${btnClass} ${cursor}" ${isBusyInOtherGroup ? 'disabled' : `onclick="toggleTempGroupSelection('${empIdStr}')"`}>
-                        <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
-                        <div class="overflow-hidden">
-                            <div class="font-bold text-gray-800 text-sm truncate" title="${empNameStr}">${empNameStr}</div>
-                            ${statusHtml}
+                return `<button type="button" class="${btnClass} ${cursor}" ${isBusyInOtherGroup ? 'disabled' : `onclick="toggleTempGroupSelection('${empIdStr}')"`}>
+                    <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                    <div class="overflow-hidden">
+                        <div class="font-bold text-gray-800 text-sm truncate" title="${empNameStr}">${empNameStr}</div>
+                        ${statusHtml}
+                    </div>
+                </button>`;
+            };
+
+            const searchQ = (document.getElementById('groupEmpSearch')?.value || '').toLowerCase().trim();
+            const matchSearch = (e) => !searchQ || (e.name || '').toLowerCase().includes(searchQ);
+            const chinhThuc = allEmployees.filter(e => e.role !== 'Tổ' && e.role !== 'Thời vụ' && matchSearch(e));
+            const thoiVu = allEmployees.filter(e => e.role === 'Thời vụ' && getLocalDateString(e.created_at) === _tvToday && matchSearch(e));
+
+            container.innerHTML = `
+                <div class="flex gap-3 h-full">
+                    <div class="flex flex-col flex-1 min-w-0 border border-blue-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-1.5 bg-blue-600 shrink-0">
+                            <span class="text-white text-xs font-bold">Chính thức (${chinhThuc.length})</span>
                         </div>
-                    </button>`;
-            });
-            container.innerHTML = creatorHtml;
+                        <div class="overflow-y-auto flex-1 p-2 grid grid-cols-1 sm:grid-cols-2 gap-2 content-start">
+                            ${chinhThuc.length > 0 ? chinhThuc.map(buildCreatorCard).join('') : '<div class="text-gray-400 text-xs text-center py-2 col-span-2">Chưa có nhân viên</div>'}
+                        </div>
+                    </div>
+                    <div class="flex flex-col min-w-0 border border-amber-300 rounded-lg overflow-hidden" style="width:220px">
+                        <div class="px-3 py-1.5 bg-amber-500 shrink-0">
+                            <span class="text-white text-xs font-bold">Thời vụ hôm nay (${thoiVu.length})</span>
+                        </div>
+                        <div class="overflow-y-auto flex-1 p-2 grid grid-cols-1 gap-2 content-start">
+                            ${thoiVu.length > 0 ? thoiVu.map(buildCreatorCard).join('') : '<div class="text-gray-400 text-xs text-center py-2">Không có</div>'}
+                        </div>
+                    </div>
+                </div>`;
         }
 
         function startCreatedGroup() {
@@ -1785,40 +1982,33 @@
                 let statusDot = grp.isPaused ? '<span class="status-paused w-3 h-3"></span>' : '<span class="status-pulse w-3 h-3"></span>';
 
                 groupsHtml += `
-                    <div class="${bgColor} rounded-2xl border-2 ${borderColor} shadow-lg overflow-hidden mb-6 transition-all">
-                        <div class="p-5 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-50/50">
-                            <div class="flex items-center gap-5">
-                                <div class="flex">${memberAvatarsHtml}</div>
-                                <div>
-                                    <h3 class="font-black text-xl text-gray-800 flex items-center tracking-tight">${statusDot} [NHÓM] ${grp.name}</h3>
-                                    <div class="text-sm font-medium text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded inline-block mt-1">${grp.members.length} thành viên đang chạy ${grp.isRemote ? '<b>(Máy khác)</b>' : ''} | Hệ số: x${grp.coefficient}</div>
-                                </div>
-                            </div>
-                            <div class="flex gap-2 w-full md:w-auto">
-                                <button ${isBtnDisabled ? 'disabled' : `onclick="toggleGroupPause('${groupId}')"`} class="${btnPauseClass}">${btnPauseText}</button>
-                                <button ${isBtnDisabled ? 'disabled' : `onclick="endSpecificGroup('${groupId}')"`} class="${btnEndClass}">🛑 Kết Thúc & Lưu Nhóm</button>
+                    <div class="${bgColor} border-2 ${borderColor} rounded-xl p-3 shadow-sm transition-all">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="flex">${memberAvatarsHtml}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-gray-800 text-sm truncate flex items-center gap-1">${statusDot} ${grp.name}</div>
+                                <div class="text-xs text-indigo-600 truncate">📋 ${grp.name} | x${grp.coefficient} | ${grp.members.length} người${grp.isRemote ? ' (Máy khác)' : ''}</div>
                             </div>
                         </div>
-                        <div class="p-5 grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
-                            <div class="lg:col-span-3 flex flex-col gap-3">
-                                <div>
-                                    <div class="text-xs font-bold text-indigo-700 mb-1.5 uppercase tracking-wide">📋 Cách 1: Dán mã vận đơn</div>
-                                    <textarea id="code_${groupId}" rows="4" oninput="updateGroupCode('${groupId}', this.value)" ${textareaDisabled} class="w-full border-2 ${grp.isPaused ? 'border-yellow-300' : 'border-indigo-300'} p-4 rounded-xl ${textareaBg} focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-800 font-mono tracking-wide resize-none transition-colors" placeholder="${textareaPlaceholder}">${grp.codes || ''}</textarea>
-                                </div>
-                                <div class="flex items-center gap-3 bg-orange-50 border-2 border-orange-200 rounded-xl p-3">
-                                    <div class="text-xs font-bold text-orange-700 uppercase tracking-wide whitespace-nowrap">✏️ Cách 2: Nhập số lượng</div>
-                                    <input type="number" id="manualCount_${groupId}" min="0" placeholder="0" value="${grp.manualCount > 0 ? grp.manualCount : (totalOrders > 0 && !grp.codes ? totalOrders : '')}"
-                                        oninput="updateManualCount('${groupId}', this.value)"
-                                        ${manualDisabled}
-                                        class="w-28 border-2 border-orange-300 p-2 rounded-lg font-black text-orange-700 text-center text-xl focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
-                                    <span class="text-sm font-bold text-orange-600">đơn <span class="text-gray-400 font-normal">(nếu không dán mã)</span></span>
-                                </div>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-1">
+                                ${grp.isPaused ? '<span class="status-paused"></span>' : '<span class="status-pulse"></span>'}
+                                <span id="timer_${groupId}" class="font-mono font-bold text-sm ${grp.isPaused ? 'text-yellow-600' : 'text-green-700'}">00:00:00</span>
                             </div>
-                            <div class="lg:col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-sm text-center flex flex-col justify-center h-full">
-                                <div class="text-gray-500 font-bold text-xs uppercase tracking-widest mb-1">Thời gian chạy</div>
-                                <div id="timer_${groupId}" class="font-mono font-black text-3xl text-gray-700 mb-4 bg-gray-100 py-2 rounded-lg">00:00:00</div>
-                                <div class="text-4xl font-black text-indigo-700 mb-2"><span id="orderCount_${groupId}">${totalOrders}</span> <span class="text-base font-bold text-indigo-400">đơn</span></div>
-                                <div class="text-sm font-bold text-red-600 bg-red-50 rounded-lg py-1.5 border border-red-100">~ <span id="perPerson_${groupId}">${perPerson}</span> đơn / người</div>
+                            <span class="bg-blue-100 text-blue-700 font-bold text-xs px-2 py-0.5 rounded-full"><span id="orderCount_${groupId}">${totalOrders}</span> đơn</span>
+                            <span class="text-[11px] text-red-500 font-bold">~<span id="perPerson_${groupId}">${perPerson}</span>/người</span>
+                        </div>
+                        <div class="flex gap-1.5 mb-2">
+                            <button ${isBtnDisabled ? 'disabled' : `onclick="toggleGroupPause('${groupId}')"`} class="${grp.isPaused ? 'flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1.5 rounded-lg' : 'flex-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-bold py-1.5 rounded-lg'} ${isBtnDisabled ? 'opacity-50 cursor-not-allowed' : ''}">${grp.isPaused ? '▶ Tiếp tục' : '⏸ Tạm dừng'}</button>
+                            <button ${isBtnDisabled ? 'disabled' : `onclick="endSpecificGroup('${groupId}')"`} class="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1.5 rounded-lg ${isBtnDisabled ? 'opacity-50 cursor-not-allowed' : ''}">🛑 Kết thúc</button>
+                            <button onclick="document.getElementById('grpInput_${groupId}').classList.toggle('hidden')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-2 py-1.5 rounded-lg">✏️</button>
+                        </div>
+                        <div id="grpInput_${groupId}" class="hidden space-y-2">
+                            <textarea id="code_${groupId}" rows="2" oninput="updateGroupCode('${groupId}', this.value)" ${textareaDisabled} class="w-full border-2 ${grp.isPaused ? 'border-yellow-300' : 'border-indigo-300'} p-2 rounded-lg ${textareaBg} focus:outline-none text-gray-800 font-mono text-xs resize-none" placeholder="${textareaPlaceholder}">${grp.codes || ''}</textarea>
+                            <div class="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg p-2">
+                                <span class="text-xs font-bold text-orange-700">Nhập SL:</span>
+                                <input type="number" id="manualCount_${groupId}" min="0" placeholder="0" value="${grp.manualCount > 0 ? grp.manualCount : (totalOrders > 0 && !grp.codes ? totalOrders : '')}" oninput="updateManualCount('${groupId}', this.value)" ${manualDisabled} class="w-20 border border-orange-300 p-1.5 rounded font-black text-orange-700 text-center text-sm focus:outline-none bg-white">
+                                <span class="text-xs font-bold text-orange-600">đơn</span>
                             </div>
                         </div>
                     </div>
@@ -2687,15 +2877,31 @@
         }
 
         function updateTeamFields() {
-            const role = document.getElementById('empRole')?.value;
-            const teamSection = document.getElementById('teamSection');
-            if (!teamSection) return;
-            
-            if (role === 'Nhân viên' || role === 'Tổ trưởng') {
-                teamSection.style.display = 'block';
-                loadTeamNamesForSelect();
+            const roleEl = document.getElementById('empRole');
+            if (!roleEl) return;
+            const role = roleEl.value;
+            const isThoiVu = (role === 'Thời vụ');
+
+            const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+            const show = (id, disp) => { const el = document.getElementById(id); if (el) el.style.display = disp || 'block'; };
+
+            if (isThoiVu) {
+                hide('teamSection');
+                hide('empDob');
+                hide('empHometown');
+                hide('empJoinDate');
+                hide('empAvatarFile');
             } else {
-                teamSection.style.display = 'none';
+                show('empDob');
+                show('empHometown');
+                show('empJoinDate');
+                show('empAvatarFile');
+                if (role === 'Nhân viên' || role === 'Tổ trưởng') {
+                    show('teamSection');
+                    loadTeamNamesForSelect();
+                } else {
+                    hide('teamSection');
+                }
             }
         }
 
@@ -2703,10 +2909,19 @@
             const container = document.getElementById('employeeList');
             if (!container) return;
 
-            const working = [], idle = [];
-            allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
+            const today = getLocalDateString(new Date());
+            const chinhWorking = [], chinhIdle = [], tvWorking = [], tvIdle = [];
+
+            allEmployees.forEach(emp => {
+                if (emp.role === 'Tổ') return;
                 const isWorking = Boolean(activeSessions[emp.id]);
-                (isWorking ? working : idle).push(emp);
+                if (emp.role === 'Thời vụ') {
+                    if (getLocalDateString(emp.created_at) === today) {
+                        (isWorking ? tvWorking : tvIdle).push(emp);
+                    }
+                } else {
+                    (isWorking ? chinhWorking : chinhIdle).push(emp);
+                }
             });
 
             const buildCard = (emp) => {
@@ -2736,51 +2951,119 @@
                 </button>`;
             };
 
-            let html = '';
-            if (working.length > 0) {
-                html += `<div>
-                    <div class="text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-full inline-flex items-center gap-1 mb-2">
-                        <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Đang làm (${working.length})
-                    </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${working.map(buildCard).join('')}</div>
-                </div>`;
+            // Render working bar (above Sale section)
+            const allWorking = [...chinhWorking, ...tvWorking];
+            const workingBar = document.getElementById('workingBar');
+            const workingBarList = document.getElementById('workingBarList');
+            const workingBarTitle = document.getElementById('workingBarTitle');
+            if (workingBar && workingBarList) {
+                if (allWorking.length > 0) {
+                    workingBar.classList.remove('hidden');
+                    workingBarTitle.textContent = `Đang làm (${allWorking.length})`;
+                    workingBarList.innerHTML = allWorking.map(emp => {
+                        const session = activeSessions[emp.id];
+                        const empNameStr = emp.name || 'Unknown';
+                        const avatar = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
+                        const isSelected = String(currentEmpId) === String(emp.id);
+                        const isPaused = session && session.isPaused;
+                        const caName = (session && session.sessionName) ? session.sessionName : '---';
+                        return `<button type="button" onclick="selectEmployee('${emp.id}')" class="text-left p-2.5 border rounded-lg transition-colors bg-white ${isSelected ? 'border-blue-400 ring-1' : 'border-gray-200 hover:bg-gray-50'}">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <img src="${avatar}" class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0">
+                                <div class="font-bold text-gray-800 text-xs truncate">${empNameStr}</div>
+                            </div>
+                            <div class="text-xs text-gray-500 truncate mb-1">📋 ${caName}</div>
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-1">
+                                    <span class="${isPaused ? 'status-paused' : 'status-pulse'}"></span>
+                                    <span id="workingTimer_${emp.id}" class="font-mono font-bold text-xs ${isPaused ? 'text-yellow-600' : 'text-green-700'}">00:00:00</span>
+                                </div>
+                                <span class="bg-blue-100 text-blue-700 font-bold text-xs px-2 py-0.5 rounded-full">${(session && session.orderCount) || 0} đơn</span>
+                            </div>
+                        </button>`;
+                    }).join('');
+                } else {
+                    workingBar.classList.add('hidden');
+                }
             }
-            if (idle.length > 0) {
-                html += `<div>
-                    <div class="text-xs font-bold text-gray-500 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full inline-flex items-center gap-1 mb-2">
-                        <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span> Đang nghỉ (${idle.length})
+
+            // Only show idle in the two panels
+            const chinhTotal = chinhIdle.length;
+            const tvTotal = tvIdle.length;
+
+            container.innerHTML = `
+                <div class="flex gap-3" style="height:280px">
+                    <div class="flex flex-col flex-1 min-w-0 border border-blue-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 bg-blue-600 shrink-0">
+                            <span class="text-white text-xs font-bold">Chính thức — Rảnh (${chinhTotal})</span>
+                        </div>
+                        <div class="overflow-y-auto flex-1 p-2 space-y-1 bg-white">
+                            ${chinhIdle.length > 0 ? `<div class="grid grid-cols-1 gap-1">${chinhIdle.map(buildCard).join('')}</div>` : '<div class="text-gray-400 text-sm text-center py-2">Không ai rảnh</div>'}
+                        </div>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${idle.map(buildCard).join('')}</div>
+                    <div class="flex flex-col flex-1 min-w-0 border border-amber-300 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 bg-amber-500 shrink-0">
+                            <span class="text-white text-xs font-bold">Thời vụ hôm nay (${tvTotal})</span>
+                        </div>
+                        <div class="overflow-y-auto flex-1 p-2 space-y-1 bg-white">
+                            ${tvIdle.length > 0 ? `<div class="grid grid-cols-1 gap-1">${tvIdle.map(buildCard).join('')}</div>` : '<div class="text-gray-400 text-sm text-center py-2">Không có thời vụ hôm nay</div>'}
+                        </div>
+                    </div>
                 </div>`;
+        }
+
+        let _currentEmpTab = 'chinhthuc';
+
+        function switchEmpTab(tab) {
+            _currentEmpTab = tab;
+            const btnC = document.getElementById('tabBtnChinhThuc');
+            const btnT = document.getElementById('tabBtnThoiVu');
+            if (tab === 'chinhthuc') {
+                btnC.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-blue-600 text-white shadow transition-colors';
+                btnT.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-white text-amber-600 shadow transition-colors';
+            } else {
+                btnC.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-blue-600 bg-white text-blue-600 shadow transition-colors';
+                btnT.className = 'px-5 py-2 rounded-lg font-bold text-sm border-2 border-amber-400 bg-amber-500 text-white shadow transition-colors';
             }
-            container.innerHTML = html || '<div class="text-gray-400 text-sm text-center py-4">Chưa có nhân viên</div>';
+            // Đồng bộ form với tab
+            const roleEl = document.getElementById('empRole');
+            if (roleEl) {
+                roleEl.value = (tab === 'thoivu') ? 'Thời vụ' : 'Nhân viên';
+                updateTeamFields();
+            }
+            loadEmployeesTable(true);
         }
 
         async function loadEmployeesTable(skipFetch = false) {
             if(!skipFetch) await fetchEmployees();
             const tbody = document.getElementById('empTableBody');
             if(!tbody) return;
-            let html = '';
-            allEmployees.filter(emp => emp.role !== 'Tổ').forEach(emp => {
-                const empNameStr = emp.name || 'Unknown';
-                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
-                const avatar = emp.avatar_url || defaultAvatar;
-                const safeName = empNameStr.replace(/'/g, "\\'");
 
-                html += `
-                    <tr class="hover:bg-blue-50 border-b transition-colors">
-                        <td class="p-3"><img src="${avatar}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-200"></td>
-                        <td class="p-3 font-bold text-gray-800">${empNameStr}</td>
-                        <td class="p-3"><span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">${emp.role}</span></td>
-                        <td class="p-3 text-gray-600">${emp.hometown || '...'}</td>
-                        <td class="p-3 text-center">
-                            <button onclick="openEditModal('${emp.id}')" class="bg-green-100 text-green-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-green-200 shadow-sm transition-colors cursor-pointer">✏️ Sửa</button>
-                            <button onclick="openHistoryModal('${emp.id}', '${safeName}')" class="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors cursor-pointer ml-2">🕒 Lịch sử</button>
-                            ${isAdminAuthenticated ? `<button onclick="deleteEmployee('${emp.id}')" class="bg-red-100 text-red-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-red-200 shadow-sm transition-colors cursor-pointer ml-2">🗑️ Xóa</button>` : ''}
-                        </td>
-                    </tr>`;
-            });
-            tbody.innerHTML = html;
+            const buildRow = (emp) => {
+                const empNameStr = emp.name || 'Unknown';
+                const avatar = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(empNameStr)}&background=random`;
+                const safeName = empNameStr.replace(/'/g, "\\'");
+                return `<tr class="hover:bg-blue-50 border-b transition-colors">
+                    <td class="p-3"><img src="${avatar}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-200"></td>
+                    <td class="p-3 font-bold text-gray-800">${empNameStr}</td>
+                    <td class="p-3"><span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">${emp.role}</span></td>
+                    <td class="p-3 text-gray-600">${emp.hometown || '...'}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="openEditModal('${emp.id}')" class="bg-green-100 text-green-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-green-200 shadow-sm transition-colors cursor-pointer">✏️ Sửa</button>
+                        <button onclick="openHistoryModal('${emp.id}', '${safeName}')" class="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-indigo-200 shadow-sm transition-colors cursor-pointer ml-2">🕒 Lịch sử</button>
+                        ${isAdminAuthenticated ? `<button onclick="deleteEmployee('${emp.id}')" class="bg-red-100 text-red-800 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-red-200 shadow-sm transition-colors cursor-pointer ml-2">🗑️ Xóa</button>` : ''}
+                    </td>
+                </tr>`;
+            };
+
+            const list = _currentEmpTab === 'chinhthuc'
+                ? allEmployees.filter(emp => emp.role !== 'Tổ' && emp.role !== 'Thời vụ')
+                : allEmployees.filter(emp => emp.role === 'Thời vụ');
+
+            tbody.innerHTML = list.length > 0
+                ? list.map(buildRow).join('')
+                : `<tr><td colspan="5" class="p-6 text-center text-gray-400 text-sm">Chưa có nhân viên</td></tr>`;
+
             renderTeamList();
         }
 
@@ -3404,6 +3687,11 @@
             fetchPendingBatches();
             updateOfflineUI();
             if (navigator.onLine) processPendingQueue();
+            // Ẩn sidebar khi trang chủ là tab mặc định
+            const _sidebar = document.querySelector('.fixed.left-4.top-24');
+            const _mainArea = document.querySelector('.xl\\:w-\\[calc\\(100\\%-280px\\)\\]');
+            if (_sidebar) _sidebar.style.display = 'none';
+            if (_mainArea) { _mainArea.style.marginLeft = '0'; _mainArea.style.width = '100%'; }
         })();
 
         async function fetchPendingBatches() {
